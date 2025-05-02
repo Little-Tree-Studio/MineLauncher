@@ -1,0 +1,10 @@
+include *.md
+include *.json
+include *.lock
+include LICENSE
+include .python-version
+include .gitignore
+include pyproject.toml
+include logo.jpg
+recursive-include src/assets/fonts *.ttf *.otf
+recursive-include src/assets/image *.svg *.ico *.png *.jpg *.gif *.jpeg
