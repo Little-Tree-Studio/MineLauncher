@@ -170,7 +170,8 @@ def main(page: ft.Page):
                 "/",
                 [
                     ft.AppBar(leading=ft.Image("assets/image/icon.png"),title=ft.Text("MineLauncher"),bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,),
-                    ft.ElevatedButton(lang_data["test"]["test1"], on_click=lambda _: page.go("/start")),
+                    ft.ElevatedButton(lang_data["test"]["test1"],ft.Icons.SCIENCE, on_click=lambda _: page.go("/start")),
+                    ft.ElevatedButton(lang_data["test"]["test2"],ft.Icons.SCIENCE, on_click=lambda _: page.go("/OOBE")),
                 ],
             )
         )
@@ -181,6 +182,15 @@ def main(page: ft.Page):
                     [
                         tabs
                     ],
+                )
+            )
+        elif page.route == "/OOBE":
+            page.views.append(
+                ft.View(
+                    "/OOBE",
+                    [
+                        ft.Tabs([ft.Tab(text=lang_data["OOBE"]["tab1"], icon=ft.Icons.NETWORK_WIFI,content=ft.Row(controls=[ft.Text("OOBE"),ft.IconButton(ft.Icons.DONE,on_click=lambda _: page.go("/"))])),],selected_index=0,expand=True),
+                    ]
                 )
             )
         page.update()
@@ -215,7 +225,7 @@ def main(page: ft.Page):
             ),
             ft.Row(
                 controls=[
-                    ft.IconButton(ft.Icons.DONE, icon_size=50, on_click=lambda e: page.go("/")),
+                    ft.IconButton(ft.Icons.DONE, icon_size=50, on_click=lambda e: page.go("/OOBE")),
                 ],
                 alignment=ft.MainAxisAlignment.END,  
             ),

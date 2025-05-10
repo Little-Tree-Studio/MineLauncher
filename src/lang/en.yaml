@@ -9,3 +9,7 @@ event:
 
 test:
   test1 : "[Debug] Open language settings"
+  test2 : "[Debug] Open OOBE"
+
+OOBE:
+  tab1 : Network
