@@ -1,3 +1,3 @@
 start:
-  hello : MineLauncher 启动器欢迎您！
   start: 开始配置启动器
+  set_language: 设置语言

@@ -1,3 +1,10 @@
+# MineLauncher
+MineLauncher/
+log/
+temp/
+.minecraft/
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
