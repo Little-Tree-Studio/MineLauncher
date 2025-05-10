@@ -1,3 +1,7 @@
 start:
   start: 开始配置启动器
   set_language: 设置语言
+event:
+  reset: 重置
+  restart: 重启
+  update: 更新

@@ -108,16 +108,17 @@ lang_data = get_lang("zh-cn")
 logging.info("语言文件加载成功")
 
 
-def start(e):
-    print(e)
 
-flag_hello = True
+
 def change_hello_text(text_controls):
-    while flag_hello:
+    while 1:
         for i in HELLO:
             time.sleep(1)
-            text_controls.value = i
-            text_controls.update()
+            try:
+                text_controls.value = i
+                text_controls.update()
+            except AssertionError:
+                break
 
 
 def main(page: ft.Page):
@@ -127,17 +128,28 @@ def main(page: ft.Page):
     }
     page.theme = ft.Theme(font_family="Sarasa UI SC")
 
-    # 关于对话框
-    dlg_about = ft.AlertDialog(
-        modal=True,
-        title=ft.Text("关于"),
-        content=ft.Text(f"这是测试 ， 测试 ，测试\n V1111111 \n {VER}"),
-        actions=[
-            ft.TextButton("关闭", on_click=lambda e: page.close(dlg_about)),
-        ],
-        actions_alignment=ft.MainAxisAlignment.END,
-    )
 
+    def route_change(e):
+        page.views.clear()
+        page.views.append(
+            ft.View(
+                "/",
+                [
+                    ft.AppBar(title=ft.Text("MineLauncher")),
+                    ft.ElevatedButton("Visit Store", on_click=lambda _: page.go("/start")),
+                ],
+            )
+        )
+        if page.route == "/start":
+            page.views.append(
+                ft.View(
+                    "/start",
+                    [
+                        tabs
+                    ],
+                )
+            )
+        page.update()
     # 语言选择页面
     def change_language(e):
         global lang_data
@@ -145,6 +157,7 @@ def main(page: ft.Page):
         
         logging.info(f"切换语言为 {e.data}")
         set_language_label.value = lang_data["start"]["set_language"]
+        
         page.update()
 
 
@@ -154,6 +167,7 @@ def main(page: ft.Page):
     set_language_label = ft.Text(lang_data["start"]["set_language"], size=30)
     language_page = ft.Column(
         controls=[
+            ft.Icon(name=ft.Icons.LANGUAGE,size=100, grade=1),
             set_language_label,
             ft.Dropdown(
                 options=[
@@ -165,23 +179,33 @@ def main(page: ft.Page):
                 on_change=change_language,
                 value="zh-cn",
             ),
+            ft.Row(
+                controls=[
+                    ft.IconButton(ft.Icons.DONE, icon_size=50, on_click=lambda e: page.go("/")),
+                ],
+                alignment=ft.MainAxisAlignment.END,  
+            ),
+            
+
         ],
+        spacing=30,
         alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
     )
 
-    # 主页面
-    hello = ft.Text(value="你好", size=40)
+
+    hello = ft.Text(value="你好", size=35)
     main_page = ft.Column(
-        spacing=400,
+        alignment=ft.MainAxisAlignment.SPACE_AROUND,
         controls=[
-            ft.Row([hello], ft.MainAxisAlignment.CENTER),
+            
+            ft.Row([ft.Text(value="MineLauncher", size=45)], ft.MainAxisAlignment.CENTER),
+            ft.Row([ft.Icon(ft.Icons.WAVING_HAND,size=45),hello], ft.MainAxisAlignment.CENTER),
             ft.Row(
                 controls=[
                     ft.IconButton(ft.Icons.NAVIGATE_NEXT, icon_size=50, on_click=lambda e: change_page(1)),
                 ],
-                alignment=ft.MainAxisAlignment.END,  # 水平靠右
-                run_spacing=1000,
+                alignment=ft.MainAxisAlignment.END,  
             ),
         ],
         expand=True,
@@ -191,18 +215,23 @@ def main(page: ft.Page):
     tabs = ft.Tabs(
         selected_index=0,
         tabs=[
-            ft.Tab(text="主页", content=main_page),
-            ft.Tab(text="语言", content=language_page),
+            ft.Tab( content=main_page, icon=ft.Icons.HOME),
+            ft.Tab( content=language_page, icon=ft.Icons.LANGUAGE),
         ],
         expand=True,
     )
+    def view_pop(e):
+        page.views.pop()
+        top_view = page.views[-1]
+        page.go(top_view.route)
+
+    page.on_route_change = route_change
+    page.on_view_pop = view_pop
 
 
 
-    page.add(tabs)
     page.update()
-
-    # 启动后台线程更新文本
+    page.go("/start")
     threading.Thread(target=change_hello_text, args=(hello,), daemon=True).start()
 
 ft.app(main)
