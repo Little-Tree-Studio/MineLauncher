@@ -6,3 +6,6 @@ event:
   reset: Reset
   restart: Restart
   update: Update
+
+test:
+  test1 : "[Debug] Open language settings"

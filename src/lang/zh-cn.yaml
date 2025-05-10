@@ -5,3 +5,5 @@ event:
   reset: 重置
   restart: 重启
   update: 更新
+test:
+  test1 : "[调试] 打开语言设置"

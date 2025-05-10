@@ -15,7 +15,7 @@ HELLO = [
     "Bonjour",  # 法语
     "Guten Tag",  # 德语
     "こんにちは",  # 日语
-    "안녕하세요",  # 韩语
+    "안녕하세요",  # 朝鲜语
     "Hola",  # 西班牙语
     "Olá",  # 葡萄牙语
     "Ciao",  # 意大利语
@@ -103,12 +103,46 @@ def get_lang(lang):
     except Exception as e:
         logging.error(f"语言文件加载失败：{e}")
     return lang_data
-lang_data = get_lang("zh-cn")
+
 
 logging.info("语言文件加载成功")
 
+def save_config(config):
+    with open("MineLauncher/config/config.json", "w", encoding="utf-8") as f:
+        json.dump(config, f, indent=4)
+        logging.info("配置文件保存成功")
+def read_config():
+    try:
+        with open("MineLauncher/config/config.json", "r", encoding="utf-8") as f:
+            config = json.load(f)
+            logging.info("配置文件读取成功")
+            return config
+    except Exception as e:
+        logging.error(f"配置文件读取失败：{e}")
+        return None
+def generate_config():
+    try:
+        with open("MineLauncher/config/config.json", "w", encoding="utf-8") as f:
+            config = {
+                "Language": "zh-cn",
 
+            }
+            json.dump(config, f, ensure_ascii=False, indent=4)
+            logging.info("配置文件生成成功")
+            return config
+    except Exception as e:
+        logging.error(f"配置文件生成失败：{e}")
+        return None
+config = read_config()
+if config is None:
+    logging.warning("配置文件为空或读取错误，即将重新生成配置文件")
+    config = generate_config()
+    if config is None:
+        logging.error("配置文件生成失败，请检查权限和路径")
+        messagebox.showerror("错误", "配置文件生成失败，请检查权限和路径")
+        exit()
 
+lang_data = get_lang(config["Language"])
 
 def change_hello_text(text_controls):
     while 1:
@@ -135,8 +169,8 @@ def main(page: ft.Page):
             ft.View(
                 "/",
                 [
-                    ft.AppBar(title=ft.Text("MineLauncher")),
-                    ft.ElevatedButton("Visit Store", on_click=lambda _: page.go("/start")),
+                    ft.AppBar(leading=ft.Image("assets/image/icon.png"),title=ft.Text("MineLauncher"),bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,),
+                    ft.ElevatedButton(lang_data["test"]["test1"], on_click=lambda _: page.go("/start")),
                 ],
             )
         )
