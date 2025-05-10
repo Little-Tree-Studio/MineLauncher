@@ -44,7 +44,11 @@ def create_folder(folder_name):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
-
+def cleanup_file(file_name):
+    if os.path.exists(file_name):
+        with open(file_name, "w", encoding="utf-8") as f:
+            f.write("")
+            
 def create_file(file_name):
     if not os.path.exists(file_name):
         with open(file_name, "w", encoding="utf-8") as f:
@@ -90,6 +94,8 @@ try:
     create_file("MineLauncher/config/config.json")
     create_file("MineLauncher/log/latest.log")
     create_file(f"MineLauncher/log/log_{start_time}.log")
+
+    cleanup_file("MineLauncher/log/latest.log")
 except Exception as e:
     logging.error(f"文件夹和文件初始化失败：{e}")
     messagebox.showerror("Fatal error", "Failed to initialize folder and file")
