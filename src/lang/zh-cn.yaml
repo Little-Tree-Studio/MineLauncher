@@ -6,6 +6,7 @@ event:
   restart: 重启
   update: 更新
 test:
+  test: 测试
   test1 : "[调试] 打开语言设置"
   test2 : "[调试] 打开OOBE"
 OOBE:

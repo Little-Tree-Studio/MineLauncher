@@ -44,15 +44,18 @@ def create_folder(folder_name):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
 
+
 def cleanup_file(file_name):
     if os.path.exists(file_name):
         with open(file_name, "w", encoding="utf-8") as f:
             f.write("")
-            
+
+
 def create_file(file_name):
     if not os.path.exists(file_name):
         with open(file_name, "w", encoding="utf-8") as f:
             f.write("")
+
 
 def list_files_in_folder(folder_path):
     if os.path.exists(folder_path) and os.path.isdir(folder_path):
@@ -65,24 +68,15 @@ def list_files_in_folder(folder_path):
         return []
 
 
-# 日志初始化
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler("MineLauncher/log/latest.log", encoding="utf-8"),
-        logging.FileHandler(f"MineLauncher/log/log_{start_time}.log", encoding="utf-8"),
-        logging.StreamHandler(),
-    ],
-)
-
-logging.info("日志初始化成功")
+if os.path.exists("MineLauncher") is not True:
+    first_run = True
+else:
+    first_run = False
 
 if os.path.exists("lang") is not True:
     logging.error("语言文件夹不存在")
     messagebox.showerror("Fatal error", "The language folder does not exist")
     exit(1)
-
 try:
     create_folder(".minecraft")
     create_folder("MineLauncher")
@@ -101,7 +95,21 @@ except Exception as e:
     messagebox.showerror("Fatal error", "Failed to initialize folder and file")
     exit(1)
 
+# 日志初始化
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("MineLauncher/log/latest.log", encoding="utf-8"),
+        logging.FileHandler(f"MineLauncher/log/log_{start_time}.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+
+logging.info("日志初始化成功")
 logging.info("文件夹和文件初始化成功")
+
+
 def get_lang(lang):
     try:
         with open(f"lang/{lang}.yaml", encoding="utf-8") as f:
@@ -113,10 +121,13 @@ def get_lang(lang):
 
 logging.info("语言文件加载成功")
 
+
 def save_config(config):
     with open("MineLauncher/config/config.json", "w", encoding="utf-8") as f:
         json.dump(config, f, indent=4)
         logging.info("配置文件保存成功")
+
+
 def read_config():
     try:
         with open("MineLauncher/config/config.json", "r", encoding="utf-8") as f:
@@ -126,12 +137,13 @@ def read_config():
     except Exception as e:
         logging.error(f"配置文件读取失败：{e}")
         return None
+
+
 def generate_config():
     try:
         with open("MineLauncher/config/config.json", "w", encoding="utf-8") as f:
             config = {
                 "Language": "zh-cn",
-
             }
             json.dump(config, f, ensure_ascii=False, indent=4)
             logging.info("配置文件生成成功")
@@ -139,6 +151,8 @@ def generate_config():
     except Exception as e:
         logging.error(f"配置文件生成失败：{e}")
         return None
+
+
 config = read_config()
 if config is None:
     logging.warning("配置文件为空或读取错误，即将重新生成配置文件")
@@ -149,6 +163,7 @@ if config is None:
         exit()
 
 lang_data = get_lang(config["Language"])
+
 
 def change_hello_text(text_controls):
     while 1:
@@ -162,6 +177,7 @@ def change_hello_text(text_controls):
 
 
 def main(page: ft.Page):
+    
     page.title = "MineLauncher"
     page.fonts = {
         "Sarasa UI SC": "assets/fonts/Sarasa UI SC.ttf",
@@ -175,19 +191,102 @@ def main(page: ft.Page):
             ft.View(
                 "/",
                 [
-                    ft.AppBar(leading=ft.Image("assets/image/icon.png"),title=ft.Text("MineLauncher"),bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,),
-                    ft.ElevatedButton(lang_data["test"]["test1"],ft.Icons.SCIENCE, on_click=lambda _: page.go("/start")),
-                    ft.ElevatedButton(lang_data["test"]["test2"],ft.Icons.SCIENCE, on_click=lambda _: page.go("/OOBE")),
+                    ft.Column(
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        controls=[
+                            ft.Row(
+                                [
+                                    ft.IconButton(icon=ft.Icons.INFO),
+                                    ft.Text(value="MineLauncher", size=45),
+                                    ft.Column(controls=[
+                                        ft.Row(controls=[ft.Placeholder(fallback_height=20,fallback_width=20),ft.Text("zs_xiaoshu")]),
+                                        ft.Button(icon=ft.Icons.PEOPLE,text="账号管理"),
+                                    ]),
+                                    
+                                ],
+                                ft.MainAxisAlignment.SPACE_BETWEEN,
+                            ),
+                            ft.Column(
+                                alignment=ft.MainAxisAlignment.CENTER,
+                                controls=[
+                                    ft.Row(
+                                        [ft.Icon(ft.Icons.WAVING_HAND, size=45)],
+                                        ft.MainAxisAlignment.CENTER,
+                                    ),
+                                ],
+                                scroll=ft.ScrollMode.AUTO,
+                                expand=True,
+                            ),
+                            ft.Row(
+                                controls=[
+                                    ft.Row(
+                                        controls=[
+                                            ft.Button(
+                                                "版本列表...",
+                                                icon=ft.Icons.LIST
+                                            )
+                                        ]
+                                    ),
+                                    ft.ElevatedButton(
+                                        lang_data["test"]["test"],
+                                        ft.Icons.SCIENCE,
+                                        on_click=lambda _: page.go("/test"),
+                                    ),
+
+                                    ft.Card(
+                                        content=ft.Row(
+                                            controls=[
+                                                ft.Row(
+                                                    controls=[
+                                                        ft.Text("  "),
+                                                        ft.Text("Minecraft 1.21.5"),
+                                                    ]
+                                                ),
+                                                ft.Row(
+                                                    controls=[
+                                                        ft.TextButton(
+                                                            "管理...",
+                                                            icon=ft.Icons.SETTINGS,
+                                                        ),
+                                                        ft.TextButton(
+                                                            "启动游戏",
+                                                            icon=ft.Icons.OPEN_IN_NEW,
+                                                        ),
+                                                    ]
+                                                ),
+                                            ],
+                                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                            expand=True,
+                                            spacing=40,
+                                        ),
+                                        height=50,
+                                    ),
+                                ],
+                                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            ),
+                        ],
+                        expand=True,
+                    ),
+                    ft.AppBar(
+                        leading=ft.Image("assets/image/icon.png"),
+                        title=ft.Text("MineLauncher"),
+                        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                        actions=[
+                            ft.TextButton("资源中心",icon=ft.Icons.SHOPPING_BASKET),
+                            ft.TextButton("下载管理",icon=ft.Icons.DOWNLOAD),
+                            ft.TextButton("启动器设置",icon=ft.Icons.SETTINGS),
+                            ft.TextButton("关于&帮助",icon=ft.Icons.INFO),
+                        ]
+                    ),
                 ],
             )
         )
+
         if page.route == "/start":
             page.views.append(
                 ft.View(
                     "/start",
-                    [
-                        tabs
-                    ],
+                    [tabs],
                 )
             )
         elif page.route == "/OOBE":
@@ -195,29 +294,79 @@ def main(page: ft.Page):
                 ft.View(
                     "/OOBE",
                     [
-                        ft.Tabs([ft.Tab(text=lang_data["OOBE"]["tab1"], icon=ft.Icons.NETWORK_WIFI,content=ft.Row(controls=[ft.Text("OOBE"),ft.IconButton(ft.Icons.DONE,on_click=lambda _: page.go("/"))])),],selected_index=0,expand=True),
-                    ]
+                        ft.Tabs(
+                            [
+                                ft.Tab(
+                                    text=lang_data["OOBE"]["tab1"],
+                                    icon=ft.Icons.NETWORK_WIFI,
+                                    content=ft.Row(
+                                        controls=[
+                                            ft.Text("OOBE"),
+                                            ft.IconButton(
+                                                ft.Icons.DONE,
+                                                on_click=lambda _: page.go("/"),
+                                            ),
+                                        ]
+                                    ),
+                                ),
+                            ],
+                            selected_index=0,
+                            expand=True,
+                        ),
+                    ],
                 )
             )
+        elif page.route == "/test":
+            page.views.append(
+                ft.View(
+                    "/",
+                    [
+                        ft.AppBar(
+                            leading=ft.Image("assets/image/icon.png"),
+                            title=ft.Text("MineLauncher"),
+                            bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                        ),
+                        ft.ElevatedButton(
+                            lang_data["test"]["test1"],
+                            ft.Icons.SCIENCE,
+                            on_click=lambda _: page.go("/start"),
+                        ),
+                        ft.ElevatedButton(
+                            lang_data["test"]["test2"],
+                            ft.Icons.SCIENCE,
+                            on_click=lambda _: page.go("/OOBE"),
+                        ),
+                        ft.IconButton(
+                            ft.Icons.HOME, icon_size=50, on_click=lambda _: page.go("/")
+                        ),
+                    ],
+                )
+
+            )
+
         page.update()
+
     # 语言选择页面
     def change_language(e):
         global lang_data
         lang_data = get_lang(e.data)
-        
+
+        config["Language"] = e.data
+        save_config(config)
+
         logging.info(f"切换语言为 {e.data}")
         set_language_label.value = lang_data["start"]["set_language"]
-        
-        page.update()
 
+        page.update()
 
     def change_page(index):
         tabs.selected_index = index
         tabs.update()
+
     set_language_label = ft.Text(lang_data["start"]["set_language"], size=30)
     language_page = ft.Column(
         controls=[
-            ft.Icon(name=ft.Icons.LANGUAGE,size=100, grade=1),
+            ft.Icon(name=ft.Icons.LANGUAGE, size=100, grade=1),
             set_language_label,
             ft.Dropdown(
                 options=[
@@ -231,31 +380,38 @@ def main(page: ft.Page):
             ),
             ft.Row(
                 controls=[
-                    ft.IconButton(ft.Icons.DONE, icon_size=50, on_click=lambda e: page.go("/OOBE")),
+                    ft.IconButton(
+                        ft.Icons.DONE, icon_size=50, on_click=lambda e: page.go("/OOBE")
+                    ),
                 ],
-                alignment=ft.MainAxisAlignment.END,  
+                alignment=ft.MainAxisAlignment.END,
             ),
-            
-
         ],
         spacing=30,
         alignment=ft.MainAxisAlignment.CENTER,
         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
     )
 
-
     hello = ft.Text(value="你好", size=35)
     main_page = ft.Column(
         alignment=ft.MainAxisAlignment.SPACE_AROUND,
         controls=[
-            
-            ft.Row([ft.Text(value="MineLauncher", size=45)], ft.MainAxisAlignment.CENTER),
-            ft.Row([ft.Icon(ft.Icons.WAVING_HAND,size=45),hello], ft.MainAxisAlignment.CENTER),
+            ft.Row(
+                [ft.Text(value="MineLauncher", size=45)], ft.MainAxisAlignment.CENTER
+            ),
+            ft.Row(
+                [ft.Icon(ft.Icons.WAVING_HAND, size=45), hello],
+                ft.MainAxisAlignment.CENTER,
+            ),
             ft.Row(
                 controls=[
-                    ft.IconButton(ft.Icons.NAVIGATE_NEXT, icon_size=50, on_click=lambda e: change_page(1)),
+                    ft.IconButton(
+                        ft.Icons.NAVIGATE_NEXT,
+                        icon_size=50,
+                        on_click=lambda e: change_page(1),
+                    ),
                 ],
-                alignment=ft.MainAxisAlignment.END,  
+                alignment=ft.MainAxisAlignment.END,
             ),
         ],
         expand=True,
@@ -265,11 +421,12 @@ def main(page: ft.Page):
     tabs = ft.Tabs(
         selected_index=0,
         tabs=[
-            ft.Tab( content=main_page, icon=ft.Icons.HOME),
-            ft.Tab( content=language_page, icon=ft.Icons.LANGUAGE),
+            ft.Tab(content=main_page, icon=ft.Icons.HOME),
+            ft.Tab(content=language_page, icon=ft.Icons.LANGUAGE),
         ],
         expand=True,
     )
+
     def view_pop(e):
         page.views.pop()
         top_view = page.views[-1]
@@ -278,10 +435,12 @@ def main(page: ft.Page):
     page.on_route_change = route_change
     page.on_view_pop = view_pop
 
-
-
     page.update()
-    page.go("/start")
+    if first_run:
+        page.go("/start")
+    else:
+        page.go("/")
     threading.Thread(target=change_hello_text, args=(hello,), daemon=True).start()
+
 
 ft.app(main)

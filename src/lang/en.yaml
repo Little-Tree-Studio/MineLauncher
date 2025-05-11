@@ -8,6 +8,7 @@ event:
   update: Update
 
 test:
+  test: Test
   test1 : "[Debug] Open language settings"
   test2 : "[Debug] Open OOBE"
 
