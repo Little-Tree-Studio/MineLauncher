@@ -62,7 +62,7 @@ def list_files_in_folder(folder_path):
         files = os.listdir(folder_path)
         return files
     else:
-        logging.ERROR(
+        logging.error(
             f"[函数-列出文件夹下文件]路径 {folder_path} 不存在或不是一个文件夹"
         )
         return []
@@ -136,7 +136,6 @@ def read_config():
             return config
     except Exception as e:
         logging.error(f"配置文件读取失败：{e}")
-        return None
 
 
 def generate_config():
@@ -177,13 +176,11 @@ def change_hello_text(text_controls):
 
 
 def main(page: ft.Page):
-    
     page.title = "MineLauncher"
     page.fonts = {
         "Sarasa UI SC": "assets/fonts/Sarasa UI SC.ttf",
     }
     page.theme = ft.Theme(font_family="Sarasa UI SC")
-
 
     def route_change(e):
         page.views.clear()
@@ -198,21 +195,48 @@ def main(page: ft.Page):
                                 [
                                     ft.IconButton(icon=ft.Icons.INFO),
                                     ft.Text(value="MineLauncher", size=45),
-                                    ft.Column(controls=[
-                                        ft.Row(controls=[ft.Placeholder(fallback_height=20,fallback_width=20),ft.Text("zs_xiaoshu")]),
-                                        ft.Button(icon=ft.Icons.PEOPLE,text="账号管理"),
-                                    ]),
-                                    
+                                    ft.Column(
+                                        controls=[
+                                            ft.Row(
+                                                controls=[
+                                                    ft.Placeholder(
+                                                        fallback_height=20,
+                                                        fallback_width=20,
+                                                    ),
+                                                    ft.Text("zs_xiaoshu"),
+                                                ]
+                                            ),
+                                            ft.Button(
+                                                icon=ft.Icons.PEOPLE, text="账号管理"
+                                            ),
+                                        ]
+                                    ),
                                 ],
                                 ft.MainAxisAlignment.SPACE_BETWEEN,
                             ),
                             ft.Column(
                                 alignment=ft.MainAxisAlignment.CENTER,
                                 controls=[
-                                    ft.Row(
-                                        [ft.Icon(ft.Icons.WAVING_HAND, size=45)],
-                                        ft.MainAxisAlignment.CENTER,
-                                    ),
+                                    ft.Card(
+                                        content=ft.Container(
+                                            content=ft.Column(
+                                                controls=[
+                                                    ft.Text(
+                                                        "新闻",
+                                                        size=20,
+                                                        weight=ft.FontWeight.BOLD,
+                                                    ),
+                                                    ft.Text(
+                                                        "标题",
+
+                                                    )
+                                                ]
+                                            ),
+                                            padding=10,
+                                            width=300,
+                                            height=100,
+                                        )
+                                    )
                                 ],
                                 scroll=ft.ScrollMode.AUTO,
                                 expand=True,
@@ -221,10 +245,7 @@ def main(page: ft.Page):
                                 controls=[
                                     ft.Row(
                                         controls=[
-                                            ft.Button(
-                                                "版本列表...",
-                                                icon=ft.Icons.LIST
-                                            )
+                                            ft.Button("版本列表...", icon=ft.Icons.LIST)
                                         ]
                                     ),
                                     ft.ElevatedButton(
@@ -232,37 +253,52 @@ def main(page: ft.Page):
                                         ft.Icons.SCIENCE,
                                         on_click=lambda _: page.go("/test"),
                                     ),
-
                                     ft.Card(
-                                        content=ft.Row(
-                                            controls=[
-                                                ft.Row(
-                                                    controls=[
-                                                        ft.Text("  "),
-                                                        ft.Text("Minecraft 1.21.5"),
-                                                    ]
-                                                ),
-                                                ft.Row(
-                                                    controls=[
-                                                        ft.TextButton(
-                                                            "管理...",
-                                                            icon=ft.Icons.SETTINGS,
-                                                        ),
-                                                        ft.TextButton(
-                                                            "启动游戏",
-                                                            icon=ft.Icons.OPEN_IN_NEW,
-                                                        ),
-                                                    ]
-                                                ),
-                                            ],
-                                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                            expand=True,
-                                            spacing=40,
+                                        content=ft.Container(
+                                            content=ft.Column(
+                                                [
+                                                    ft.Row(
+                                                        [
+                                                            ft.Image(
+                                                                "assets/image/grass.png",
+                                                                width=30,
+                                                                height=30,
+                                                            ),
+                                                            ft.Text("MineCraft 1.20.1"),
+                                                        ]
+                                                    ),
+                                                    ft.Row(
+                                                        [
+                                                            ft.TextButton(
+                                                                "管理...",
+                                                                icon=ft.Icons.SETTINGS,
+                                                                style=ft.ButtonStyle(
+                                                                    shape=ft.RoundedRectangleBorder(
+                                                                        radius=5
+                                                                    )
+                                                                ),
+                                                            ),
+                                                            ft.FilledButton(
+                                                                "启动游戏",
+                                                                icon=ft.Icons.PLAY_ARROW,
+                                                                style=ft.ButtonStyle(
+                                                                    shape=ft.RoundedRectangleBorder(
+                                                                        radius=5
+                                                                    )
+                                                                ),
+                                                            ),
+                                                        ],
+                                                        alignment=ft.MainAxisAlignment.END,
+                                                    ),
+                                                ]
+                                            ),
+                                            width=300,
+                                            padding=10,
                                         ),
-                                        height=50,
                                     ),
                                 ],
                                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                vertical_alignment=ft.CrossAxisAlignment.END,
                             ),
                         ],
                         expand=True,
@@ -272,11 +308,12 @@ def main(page: ft.Page):
                         title=ft.Text("MineLauncher"),
                         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                         actions=[
-                            ft.TextButton("资源中心",icon=ft.Icons.SHOPPING_BASKET),
-                            ft.TextButton("下载管理",icon=ft.Icons.DOWNLOAD),
-                            ft.TextButton("启动器设置",icon=ft.Icons.SETTINGS),
-                            ft.TextButton("关于&帮助",icon=ft.Icons.INFO),
-                        ]
+                            ft.TextButton("资源中心", icon=ft.Icons.SHOPPING_BASKET),
+                            ft.TextButton("下载管理", icon=ft.Icons.DOWNLOAD),
+                            ft.VerticalDivider(),
+                            ft.TextButton("启动器设置", icon=ft.Icons.SETTINGS),
+                            ft.TextButton("关于&帮助", icon=ft.Icons.INFO, on_click=lambda _: page.go("/about")),
+                        ],
                     ),
                 ],
             )
@@ -341,9 +378,22 @@ def main(page: ft.Page):
                         ),
                     ],
                 )
-
             )
-
+        elif page.route == "/about":
+            page.views.append(
+                ft.View(
+                    "/about",
+                    [
+                        ft.ElevatedButton(
+                            "返回", on_click=lambda _: page.go("/"), icon=ft.Icons.HOME
+                        ),
+                        ft.Text(lang_data["about"]["title"], size=30),
+                        ft.Text(
+                            lang_data["about"]["description"],
+                        )
+                    ]
+                )
+            )
         page.update()
 
     # 语言选择页面

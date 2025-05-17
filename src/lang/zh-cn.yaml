@@ -11,3 +11,6 @@ test:
   test2 : "[调试] 打开OOBE"
 OOBE:
   tab1 : 网络
+about: 
+  title: 关于
+  description: 本程序由Python和Flet开发，使用AGPL v3.0协议开源。

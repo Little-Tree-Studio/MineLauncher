@@ -14,3 +14,7 @@ test:
 
 OOBE:
   tab1 : Network
+
+about: 
+  title: About
+  description: This program is open-sourced under the AGPL v3.0 license, developed using Python and Flet.
