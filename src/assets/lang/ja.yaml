@@ -1,0 +1,27 @@
+start:
+  start: ランチャーの設定を開始します
+  set_language: 言語を設定する
+event:
+  reset: リセット
+  restart: 再起動
+  update: 更新
+test:
+  test: テスト
+  test1 : "[デバッグ] 言語設定を開く"
+  test2 : "[デバッグ] OOBEを開く"
+OOBE:
+  tab1 : ネットワーク
+about: 
+  title: このアプリについて
+  description: このプログラムはPythonとFletを使用して開発され、AGPL v3.0ライセンスの下でオープンソース化されています。
+home:
+  account_settings: アカウント管理
+  version_list: バージョンリスト
+  game:
+    launch: 起動
+    config: 管理...
+  top:
+    resource_center: リソースセンター
+    settings: ランチャー設定
+    download_management: ダウンロード管理
+    about: このアプリについてとヘルプ

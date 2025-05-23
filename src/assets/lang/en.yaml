@@ -1,0 +1,27 @@
+start:
+  start: Start configuring the launcher
+  set_language: Set language
+event:
+  reset: Reset
+  restart: Restart
+  update: Update
+test:
+  test: Test
+  test1 : "[Debug] Open language settings"
+  test2 : "[Debug] Open OOBE"
+OOBE:
+  tab1 : Network
+about: 
+  title: About
+  description: This program is developed with Python and Flet and is open - sourced under the AGPL v3.0 license.
+home:
+  account_settings: Account management
+  version_list: Version list
+  game:
+    launch: Launch
+    config: Manage...
+  top:
+    resource_center: Resource center
+    settings: Launcher settings
+    download_management: Download management
+    about: About & Help

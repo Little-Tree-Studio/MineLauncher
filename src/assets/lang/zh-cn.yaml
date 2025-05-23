@@ -1,0 +1,27 @@
+start:
+  start: 开始配置启动器
+  set_language: 设置语言
+event:
+  reset: 重置
+  restart: 重启
+  update: 更新
+test:
+  test: 测试
+  test1 : "[调试] 打开语言设置"
+  test2 : "[调试] 打开OOBE"
+OOBE:
+  tab1 : 网络
+about: 
+  title: 关于
+  description: 本程序由Python和Flet开发，使用AGPL v3.0协议开源。
+home:
+  account_settings: 账号管理
+  version_list: 版本列表
+  game:
+    launch: 启动游戏
+    config: 管理...
+  top:
+    resource_center: 资源中心
+    settings: 启动器设置
+    download_management: 下载管理
+    about: 关于&帮助

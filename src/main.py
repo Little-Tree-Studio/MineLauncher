@@ -73,7 +73,7 @@ if os.path.exists("MineLauncher") is not True:
 else:
     first_run = False
 
-if os.path.exists("lang") is not True:
+if os.path.exists("assets/lang") is not True:
     logging.error("语言文件夹不存在")
     messagebox.showerror("Fatal error", "The language folder does not exist")
     exit(1)
@@ -112,7 +112,7 @@ logging.info("文件夹和文件初始化成功")
 
 def get_lang(lang):
     try:
-        with open(f"lang/{lang}.yaml", encoding="utf-8") as f:
+        with open(f"assets/lang/{lang}.yaml", encoding="utf-8") as f:
             lang_data = yaml.safe_load(f)
     except Exception as e:
         logging.error(f"语言文件加载失败：{e}")
@@ -181,7 +181,7 @@ def main(page: ft.Page):
         "Sarasa UI SC": "assets/fonts/Sarasa UI SC.ttf",
     }
     page.theme = ft.Theme(font_family="Sarasa UI SC")
-
+    
     def route_change(e):
         page.views.clear()
         page.views.append(
@@ -193,7 +193,7 @@ def main(page: ft.Page):
                         controls=[
                             ft.Row(
                                 [
-                                    ft.IconButton(icon=ft.Icons.INFO),
+                                    # ft.IconButton(icon=ft.Icons.INFO),
                                     ft.Text(value="MineLauncher", size=45),
                                     ft.Column(
                                         controls=[
@@ -207,7 +207,7 @@ def main(page: ft.Page):
                                                 ]
                                             ),
                                             ft.Button(
-                                                icon=ft.Icons.PEOPLE, text="账号管理"
+                                                icon=ft.Icons.PEOPLE, text=lang_data["home"]["account_settings"]
                                             ),
                                         ]
                                     ),
@@ -245,7 +245,7 @@ def main(page: ft.Page):
                                 controls=[
                                     ft.Row(
                                         controls=[
-                                            ft.Button("版本列表...", icon=ft.Icons.LIST)
+                                            ft.Button(lang_data["home"]["version_list"], icon=ft.Icons.LIST)
                                         ]
                                     ),
                                     ft.ElevatedButton(
@@ -270,7 +270,7 @@ def main(page: ft.Page):
                                                     ft.Row(
                                                         [
                                                             ft.TextButton(
-                                                                "管理...",
+                                                                lang_data["home"]["game"]["config"],
                                                                 icon=ft.Icons.SETTINGS,
                                                                 style=ft.ButtonStyle(
                                                                     shape=ft.RoundedRectangleBorder(
@@ -279,7 +279,7 @@ def main(page: ft.Page):
                                                                 ),
                                                             ),
                                                             ft.FilledButton(
-                                                                "启动游戏",
+                                                                lang_data["home"]["game"]["launch"],
                                                                 icon=ft.Icons.PLAY_ARROW,
                                                                 style=ft.ButtonStyle(
                                                                     shape=ft.RoundedRectangleBorder(
@@ -308,11 +308,11 @@ def main(page: ft.Page):
                         title=ft.Text("MineLauncher"),
                         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                         actions=[
-                            ft.TextButton("资源中心", icon=ft.Icons.SHOPPING_BASKET),
-                            ft.TextButton("下载管理", icon=ft.Icons.DOWNLOAD),
+                            ft.TextButton(lang_data["home"]["top"]["resource_center"], icon=ft.Icons.SHOPPING_BASKET),
+                            ft.TextButton(lang_data["home"]["top"]["download_management"], icon=ft.Icons.DOWNLOAD),
                             ft.VerticalDivider(),
-                            ft.TextButton("启动器设置", icon=ft.Icons.SETTINGS),
-                            ft.TextButton("关于&帮助", icon=ft.Icons.INFO, on_click=lambda _: page.go("/about")),
+                            ft.TextButton(lang_data["home"]["top"]["settings"], icon=ft.Icons.SETTINGS),
+                            ft.TextButton(lang_data["home"]["top"]["about"], icon=ft.Icons.INFO, on_click=lambda _: page.go("/about")),
                         ],
                     ),
                 ],
