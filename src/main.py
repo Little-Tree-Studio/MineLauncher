@@ -181,7 +181,7 @@ def main(page: ft.Page):
         "Sarasa UI SC": "assets/fonts/Sarasa UI SC.ttf",
     }
     page.theme = ft.Theme(font_family="Sarasa UI SC")
-    
+
     def route_change(e):
         page.views.clear()
         page.views.append(
@@ -207,9 +207,13 @@ def main(page: ft.Page):
                                                 ]
                                             ),
                                             ft.Button(
-                                                icon=ft.Icons.PEOPLE, text=lang_data["home"]["account_settings"]
+                                                icon=ft.Icons.PEOPLE,
+                                                text=lang_data["home"][
+                                                    "account_settings"
+                                                ],
                                             ),
-                                        ]
+                                        ],
+                                        horizontal_alignment=ft.CrossAxisAlignment.END,
                                     ),
                                 ],
                                 ft.MainAxisAlignment.SPACE_BETWEEN,
@@ -228,8 +232,7 @@ def main(page: ft.Page):
                                                     ),
                                                     ft.Text(
                                                         "标题",
-
-                                                    )
+                                                    ),
                                                 ]
                                             ),
                                             padding=10,
@@ -245,7 +248,10 @@ def main(page: ft.Page):
                                 controls=[
                                     ft.Row(
                                         controls=[
-                                            ft.Button(lang_data["home"]["version_list"], icon=ft.Icons.LIST)
+                                            ft.Button(
+                                                lang_data["home"]["version_list"],
+                                                icon=ft.Icons.LIST,
+                                            )
                                         ]
                                     ),
                                     ft.ElevatedButton(
@@ -270,7 +276,9 @@ def main(page: ft.Page):
                                                     ft.Row(
                                                         [
                                                             ft.TextButton(
-                                                                lang_data["home"]["game"]["config"],
+                                                                lang_data["home"][
+                                                                    "game"
+                                                                ]["config"],
                                                                 icon=ft.Icons.SETTINGS,
                                                                 style=ft.ButtonStyle(
                                                                     shape=ft.RoundedRectangleBorder(
@@ -279,7 +287,9 @@ def main(page: ft.Page):
                                                                 ),
                                                             ),
                                                             ft.FilledButton(
-                                                                lang_data["home"]["game"]["launch"],
+                                                                lang_data["home"][
+                                                                    "game"
+                                                                ]["launch"],
                                                                 icon=ft.Icons.PLAY_ARROW,
                                                                 style=ft.ButtonStyle(
                                                                     shape=ft.RoundedRectangleBorder(
@@ -308,11 +318,24 @@ def main(page: ft.Page):
                         title=ft.Text("MineLauncher"),
                         bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
                         actions=[
-                            ft.TextButton(lang_data["home"]["top"]["resource_center"], icon=ft.Icons.SHOPPING_BASKET),
-                            ft.TextButton(lang_data["home"]["top"]["download_management"], icon=ft.Icons.DOWNLOAD),
+                            ft.TextButton(
+                                lang_data["home"]["top"]["resource_center"],
+                                icon=ft.Icons.SHOPPING_BASKET,
+                            ),
+                            ft.TextButton(
+                                lang_data["home"]["top"]["download_management"],
+                                icon=ft.Icons.DOWNLOAD,
+                            ),
                             ft.VerticalDivider(),
-                            ft.TextButton(lang_data["home"]["top"]["settings"], icon=ft.Icons.SETTINGS),
-                            ft.TextButton(lang_data["home"]["top"]["about"], icon=ft.Icons.INFO, on_click=lambda _: page.go("/about")),
+                            ft.TextButton(
+                                lang_data["home"]["top"]["settings"],
+                                icon=ft.Icons.SETTINGS,
+                            ),
+                            ft.TextButton(
+                                lang_data["home"]["top"]["about"],
+                                icon=ft.Icons.INFO,
+                                on_click=lambda _: page.go("/about"),
+                            ),
                         ],
                     ),
                 ],
@@ -390,8 +413,8 @@ def main(page: ft.Page):
                         ft.Text(lang_data["about"]["title"], size=30),
                         ft.Text(
                             lang_data["about"]["description"],
-                        )
-                    ]
+                        ),
+                    ],
                 )
             )
         page.update()

@@ -4,6 +4,13 @@ log/
 temp/
 .minecraft/
 
+# Editor directories
+.idea/
+.vscode/
+
+# Development files
+tests/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
