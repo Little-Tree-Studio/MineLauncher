@@ -1,0 +1,59 @@
+from __future__ import annotations
+from pathlib import Path
+import flet as ft
+from app.services.logger_service import LoggerService
+from app.services.config_service import ConfigService
+from app.pages.first_run_page import FirstRunPage
+from app.pages.home_page import HomePage
+from app.pages.about_page import AboutPage
+from app.pages.resources_page import ResourcesPage
+from app.pages.core_download_page import CoreDownloadPage
+
+ASSET_DIR = Path(__file__).parent.parent / "assets"
+
+class App:
+    def __init__(self):
+        self.logger = LoggerService().logger
+        self.cfg = ConfigService()
+        self.first_run = not Path("MineLauncher/config/.inited").exists()
+
+    def run(self):
+        import flet as ft
+        ft.app(target=self.main)
+
+    def main(self, page: ft.Page):
+        page.title = "MineLauncher"
+        # flet JSON encoder can't serialize pathlib.Path objects directly,
+        # convert to string (file path) so it can be encoded.
+        page.fonts = {"Sara": str(ASSET_DIR / "fonts" / "Sarasa UI SC.ttf")}
+        page.theme = ft.Theme(font_family="Sara")
+
+        # 路由变化处理: 根据 page.route 构建对应视图
+        def route_change(e: ft.RouteChangeEvent):
+            page.views.clear()
+            if page.route == "/start":
+                page.views.append(FirstRunPage(lambda: page.go("/")).build())
+            elif page.route == "/about":
+                page.views.append(AboutPage(page).build())
+            elif page.route == "/resources":
+                page.views.append(ResourcesPage(page).build())
+            elif page.route == "/core_download":
+                page.views.append(CoreDownloadPage(page).build())
+            else:  # 默认主页
+                page.views.append(HomePage(page).build())
+            page.update()
+
+        # 返回上一视图（例如浏览器后退）
+        def view_pop(e: ft.ViewPopEvent):
+            page.views.pop()
+            top = page.views[-1] if page.views else None
+            page.go(top.route if top else "/")
+
+        page.on_route_change = route_change
+        page.on_view_pop = view_pop
+
+        if self.first_run:
+            Path("MineLauncher/config/.inited").touch()
+            page.go("/start")
+        else:
+            page.go("/")

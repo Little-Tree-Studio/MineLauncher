@@ -8,7 +8,10 @@ authors = [
     { name = "shu-shu-1", email = "zs3458222@outlook.com" }
 ]
 dependencies = [
-  "flet==0.27.6"
+  "flet==0.27.6",
+  "loguru>=0.7.3",
+  "orjson>=3.11.1",
+  "requests>=2.32.4",
 ]
 
 [tool.flet]
@@ -40,7 +43,3 @@ package-mode = false
 [tool.poetry.group.dev.dependencies]
 flet = {extras = ["all"], version = "0.27.6"}
 
-[[tool.uv.index]]
-name = "tsinghua"
-url = "https://pypi.tuna.tsinghua.edu.cn/simple"
-default = true

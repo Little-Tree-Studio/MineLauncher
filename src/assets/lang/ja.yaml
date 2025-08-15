@@ -7,14 +7,15 @@ event:
   update: 更新
 test:
   test: テスト
-  test1 : "[デバッグ] 言語設定を開く"
-  test2 : "[デバッグ] OOBEを開く"
+  test1: "[デバッグ] 言語設定を開く"
+  test2: "[デバッグ] OOBEを開く"
 OOBE:
-  tab1 : ネットワーク
-about: 
+  tab1: ネットワーク
+about:
   title: このアプリについて
   description: このプログラムはPythonとFletを使用して開発され、AGPL v3.0ライセンスの下でオープンソース化されています。
 home:
+  title: 主页
   account_settings: アカウント管理
   version_list: バージョンリスト
   game:

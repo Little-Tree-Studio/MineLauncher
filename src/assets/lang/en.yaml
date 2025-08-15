@@ -7,14 +7,15 @@ event:
   update: Update
 test:
   test: Test
-  test1 : "[Debug] Open language settings"
-  test2 : "[Debug] Open OOBE"
+  test1: "[Debug] Open language settings"
+  test2: "[Debug] Open OOBE"
 OOBE:
-  tab1 : Network
-about: 
+  tab1: Network
+about:
   title: About
   description: This program is developed with Python and Flet and is open - sourced under the AGPL v3.0 license.
 home:
+  title: Home
   account_settings: Account management
   version_list: Version list
   game:
