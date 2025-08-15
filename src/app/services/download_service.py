@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ..info import VER
+from ..info import UA
 
 
 class DownloadSource(enum.Enum):
@@ -118,7 +119,7 @@ class MinecraftDownloader:
         session.mount('https://', adapter)
         # 统一的 headers
         session.headers.update({
-            'User-Agent': f'MineLauncher/{VER}'
+            'User-Agent': UA
         })
         return session
 
