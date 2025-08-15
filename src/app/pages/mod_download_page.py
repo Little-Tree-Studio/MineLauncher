@@ -85,17 +85,10 @@ def mod_download_page(page: ft.Page):
         mod_list
     )
 
-# 入口函数
-def main(page: ft.Page):
-    mod_download_page(page)
-
-if __name__ == "__main__":
-    ft.app(target=main)
-
 
 class ModDownloadPage:
     def __init__(self, page: ft.Page):
         self.page = page
 
     def build(self) -> ft.View:
-        return ft.View("/mod_download", [])
+        return ft.View("/mod_download", [mod_download_page(self.page)])
