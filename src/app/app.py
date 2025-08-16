@@ -8,7 +8,7 @@ from app.pages.home_page import HomePage
 from app.pages.about_page import AboutPage
 from app.pages.resources_page import ResourcesPage
 from app.pages.core_download_page import CoreDownloadPage
-from app.pages.mod_download_page import ModDownloadPage
+from app.pages.mod_download_page import mod_download_page
 
 ASSET_DIR = Path(__file__).parent.parent / "assets"
 
@@ -41,7 +41,7 @@ class App:
             elif page.route == "/core_download":
                 page.views.append(CoreDownloadPage(page).build())
             elif page.route == "/mod_download":
-                page.views.append(ModDownloadPage(page).build())
+                page.views.append(mod_download_page(page))
             else:  # 默认主页
                 page.views.append(HomePage(page).build())
             page.update()
