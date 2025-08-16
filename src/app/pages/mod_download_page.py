@@ -1,7 +1,7 @@
 import flet as ft
 import requests
 import os
-from flet import TextField, ElevatedButton, ListView, Row, Column, Text, Image, ProgressBar, Container, icons, IconButton, SnackBar, FilePicker, FilePickerResultEvent
+from flet import TextField, ElevatedButton, ListView, Row, Column, Text, Image, ProgressBar, Container, Icons, IconButton, SnackBar, FilePicker, FilePickerResultEvent
 MODRINTH_SEARCH_API = "https://api.modrinth.com/v2/search"
 MODRINTH_PROJECT_API = "https://api.modrinth.com/v2/project/"
 
@@ -39,6 +39,19 @@ def mod_download_page(page: ft.Page):
     folder_picker = FilePicker()
     page.overlay.append(folder_picker)
     download_params = {}
+
+    def show_mod_intro(mod_name, mod_desc):
+        page.dialog = ft.AlertDialog(
+            title=Text(f"{mod_name} 简介"),
+            content=Text(mod_desc or "暂无简介"),
+            actions=[ft.TextButton("关闭", on_click=lambda e: setattr(page.dialog, "open", False))],
+        )
+        page.dialog.open = True
+        page.update()
+
+    def goto_mod_download(mod_id):
+        # 跳转到模组下载详情页面，路由为 /mod_download/{mod_id}
+        page.go(f"/mod_download/{mod_id}")
 
     def search_mods(e=None):
         query = search_field.value.strip()
@@ -93,9 +106,12 @@ def mod_download_page(page: ft.Page):
 
                 mod_item = Container(
                     content=Row([
-                        Image(src=icon_url, width=40, height=40) if icon_url else IconButton(icon=icons.DOWNLOAD),
+                        Image(src=icon_url, width=40, height=40) if icon_url else IconButton(icon=Icons.DOWNLOAD),
                         Column([
-                            Text(name, size=16, weight="bold"),
+                            Row([
+                                Text(name, size=16, weight="bold"),
+                                IconButton(icon=Icons.INFO_OUTLINED, tooltip="简介", on_click=(lambda n=name, d=desc: lambda e: show_mod_intro(n, d))()),
+                            ]),
                             Text(desc, size=12, overflow="ellipsis"),
                             Row([
                                 Text("选择版本:"),
@@ -108,6 +124,7 @@ def mod_download_page(page: ft.Page):
                     padding=10,
                     bgcolor="#f5f5f5",
                     border_radius=8,
+                    on_click=lambda e, mid=mod_id: goto_mod_download(mid)
                 )
                 mod_list.controls.append(mod_item)
             page.update()
