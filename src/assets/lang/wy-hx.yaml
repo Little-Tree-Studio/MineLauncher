@@ -1,0 +1,28 @@
+start:
+  start: 始置启器
+  set_language: 设言
+event:
+  reset: 复初
+  restart: 再启
+  update: 新之
+test:
+  test: 试
+  test1: "[校] 开设言"
+  test2: "[校] 开初设"
+OOBE:
+  tab1: 通
+about:
+  title: 述
+  description: 斯器Python、Flet所制，以AGPL v3.0协议公源。
+home:
+  title: 首
+  account_settings: 户理
+  version_list: 版录
+  game:
+    launch: 戏启
+    config: 理诸
+  top:
+    resource_center: 资枢
+    settings: 启器设
+    download_management: 取理
+    about: 述与助 

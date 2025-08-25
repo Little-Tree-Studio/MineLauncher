@@ -46,7 +46,10 @@ def mod_download_page(page: ft.Page):
             content=Text(mod_desc or "暂无简介"),
             actions=[ft.TextButton("关闭", on_click=lambda e: setattr(page.dialog, "open", False))],
         )
-        page.dialog.open = True
+        page.open(page.dialog)
+        
+        
+        
         page.update()
 
     def goto_mod_download(mod_id):

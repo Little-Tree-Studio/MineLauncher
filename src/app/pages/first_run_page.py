@@ -41,6 +41,7 @@ class FirstRunPage:
                                 ft.dropdown.Option("zh-cn", "简体中文"),
                                 ft.dropdown.Option("en", "English"),
                                 ft.dropdown.Option("ja", "日本語"),
+                                ft.dropdown.Option("wy-hx", "文言(華夏)")
                             ],
                             value=self.cfg.load().get("Language", "zh-cn"),
                             on_change=change_language,

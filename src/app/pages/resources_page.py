@@ -34,7 +34,7 @@ class ResourcesPage:
                                 ft.Container(
                                     content=ft.Column(
                                         controls=[
-                                            ft.Icon(name=ft.Icons.API),
+                                            ft.Icon(name=ft.Icons.EXTENSION),
                                             ft.Text("Mod下载"),
                                         ],
                                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,

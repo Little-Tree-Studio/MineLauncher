@@ -1,6 +1,6 @@
 import flet as ft
 import requests
-from flet import Text, Row, Column, Image, ProgressBar, ElevatedButton, Container, Icons, IconButton, SnackBar, FilePicker, FilePickerResultEvent
+from flet import Text, Row, Column, Image, ProgressBar, ElevatedButton, Icons, IconButton, SnackBar, FilePicker, FilePickerResultEvent
 MODRINTH_PROJECT_API = "https://api.modrinth.com/v2/project/"
 
 # 详情页面，路由: /mod_download/{mod_id}
@@ -10,7 +10,7 @@ def mod_detail_page(page: ft.Page):
     versions = []
     version_files = []
     version_options = []
-    selected_version = None
+    # selected_version not used
     folder_picker = FilePicker()
     page.overlay.append(folder_picker)
     download_params = {}
@@ -70,6 +70,17 @@ def mod_detail_page(page: ft.Page):
     folder_picker.on_result = on_folder_result
 
     # 详情内容参考PCL，展示图标、名称、简介、作者、下载数、版本选择、下载按钮
+
+    # 返回上一视图而不是始终创建一个新的搜索页面
+    def on_return_click(e):
+        # 如果有视图栈则弹出当前视图并导航至栈顶路由，否则退回到模组列表路由
+        if page.views:
+            page.views.pop()
+            top = page.views[-1] if page.views else None
+            # 如果弹出后没有其它视图，回到模组搜索页；否则回到栈顶视图路由
+            page.go(top.route if top else "/mod_download")
+        else:
+            page.go("/mod_download")
     return ft.View(
         f"/mod_download/{mod_id}",
         [
@@ -89,7 +100,7 @@ def mod_detail_page(page: ft.Page):
                 progress_bar
             ], alignment="start"),
             Row([
-                ElevatedButton("返回", on_click=lambda e: page.go("/mod_download"))
+                ElevatedButton("返回", on_click=on_return_click)
             ], alignment="start"),
         ]
     )

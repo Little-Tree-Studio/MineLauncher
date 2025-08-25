@@ -9,8 +9,10 @@ from app.pages.about_page import AboutPage
 from app.pages.resources_page import ResourcesPage
 from app.pages.core_download_page import CoreDownloadPage
 from app.pages.mod_download_page import mod_download_page
+from app.pages.mod_detail_page import mod_detail_page
 
 ASSET_DIR = Path(__file__).parent.parent / "assets"
+
 
 class App:
     def __init__(self):
@@ -19,7 +21,6 @@ class App:
         self.first_run = not Path("MineLauncher/config/.inited").exists()
 
     def run(self):
-        import flet as ft
         ft.app(target=self.main)
 
     def main(self, page: ft.Page):
@@ -31,7 +32,16 @@ class App:
 
         # 路由变化处理: 根据 page.route 构建对应视图
         def route_change(e: ft.RouteChangeEvent):
-            page.views.clear()
+            # 如果视图栈中已存在目标路由，直接更新即可（避免重建导致状态丢失）
+            for v in page.views:
+                if v.route == page.route:
+                    page.update()
+                    return
+
+            # 对于顶层路由（主页、关于等），清空视图栈并重新建立；对于子页面（例如模组详情）则在栈上追加，保留之前的搜索页状态
+            if not page.route.startswith("/mod_download/"):
+                page.views.clear()
+
             if page.route == "/start":
                 page.views.append(FirstRunPage(lambda: page.go("/")).build())
             elif page.route == "/about":
@@ -42,8 +52,12 @@ class App:
                 page.views.append(CoreDownloadPage(page).build())
             elif page.route == "/mod_download":
                 page.views.append(mod_download_page(page))
+            elif page.route.startswith("/mod_download/"):
+                page.views.append(mod_detail_page(page))
             else:  # 默认主页
+                page.views.clear()
                 page.views.append(HomePage(page).build())
+
             page.update()
 
         # 返回上一视图（例如浏览器后退）
