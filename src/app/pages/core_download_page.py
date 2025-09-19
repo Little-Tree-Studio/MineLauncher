@@ -2,6 +2,7 @@ from __future__ import annotations
 import flet as ft
 from pathlib import Path
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from app.services.download_service import MinecraftDownloader
 
 
@@ -26,12 +27,110 @@ class CoreDownloadPage:
 
         # 顶部筛选控件占位（在 build 中创建）
         self._filter_row = None
+        
+        # 线程池用于异步处理耗时操作
+        self._executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix="CoreDownload")
+        
+        # 控制渲染任务的锁，防止同时进行多个渲染任务
+        self._render_lock = threading.Lock()
+        self._is_rendering = False
 
-    # -------------------- 数据加载（线程） --------------------
+    # -------------------- 数据加载（异步优化） --------------------
     def _load_versions(self):
         """在线程中调用的阻塞函数，返回 manifest 字典。"""
         downloader = MinecraftDownloader(self.mc_root)
         return downloader.get_version_manifest()
+
+    def _async_load_versions(self):
+        """异步版本加载，使用线程池避免阻塞UI"""
+        def _load_complete(future):
+            """加载完成回调"""
+            try:
+                manifest = future.result()
+                self._dispatch_ui(lambda: self._on_manifest_loaded(manifest))
+            except Exception as err:
+                self._dispatch_ui(lambda err=err: self._show_error(err))
+        
+        # 提交到线程池异步执行
+        future = self._executor.submit(self._load_versions)
+        future.add_done_callback(_load_complete)
+
+    def _on_manifest_loaded(self, manifest: dict):
+        """manifest加载完成后的UI更新"""
+        self._manifest = manifest
+        self._render_manifest_async(manifest)
+
+    def _render_manifest_async(self, manifest: dict):
+        """异步渲染manifest，避免大数据量时UI卡顿"""
+        # 防止同时进行多个渲染任务
+        if self._is_rendering:
+            return
+            
+        with self._render_lock:
+            if self._is_rendering:
+                return
+            self._is_rendering = True
+            
+        def _render_complete(future):
+            """渲染完成回调"""
+            self._is_rendering = False
+            try:
+                cards = future.result()
+                self._dispatch_ui(lambda: self._update_cards(cards))
+            except Exception as err:
+                self._dispatch_ui(lambda err=err: self._show_error(f"渲染失败: {err}"))
+        
+        # 提交卡片构建任务到线程池
+        future = self._executor.submit(self._build_version_cards, manifest)
+        future.add_done_callback(_render_complete)
+
+    def _build_version_cards(self, manifest: dict) -> list[ft.Control]:
+        """在后台线程构建版本卡片（CPU密集型操作）"""
+        cards: list[ft.Control] = []
+        for v in manifest.get("versions", []):
+            v_type = v.get("type", "")
+            # 根据当前选中的类型过滤
+            if v_type and v_type not in self._selected_types:
+                continue
+            tag_text = {
+                "snapshot": ("快照版", ft.Colors.ORANGE),
+                "release": ("正式版", ft.Colors.GREEN),
+                "old_alpha": ("旧 Alpha", ft.Colors.GREY),
+                "old_beta": ("旧 Beta", ft.Colors.GREY),
+            }.get(v_type, (v_type, ft.Colors.BLUE_GREY))
+            cards.append(
+                ft.Card(
+                    content=ft.Container(
+                        padding=10,
+                        content=ft.Row(
+                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                            controls=[
+                                ft.Column(
+                                    spacing=2,
+                                    controls=[
+                                        ft.Text(v.get("id", "?"), weight=ft.FontWeight.BOLD),
+                                        ft.Text(tag_text[0], size=11, color=tag_text[1]),
+                                    ],
+                                ),
+                                ft.ElevatedButton(
+                                    "下载",
+                                    icon=ft.Icons.DOWNLOAD,
+                                    data=v.get("id"),
+                                    on_click=self._on_download_click,
+                                ),
+                            ],
+                        ),
+                    )
+                )
+            )
+        if not cards:
+            cards = [ft.Text("未获取到版本信息", color=ft.Colors.GREY)]
+        return cards
+
+    def _update_cards(self, cards: list[ft.Control]):
+        """更新UI卡片（在UI线程执行）"""
+        self._versions_column.controls = cards
+        self.page.update()
 
     def _render_manifest(self, manifest: dict):
         # 如果有防抖计时器，说明可能有未完成的合并请求，取消它以确保立即生效
@@ -84,22 +183,30 @@ class CoreDownloadPage:
         self._versions_column.controls = cards
         self.page.update()
 
+    def _dispatch_ui(self, callback):
+        """统一的UI线程调度方法"""
+        try:
+            # 新版 Flet
+            if hasattr(self.page, "invoke_later"):
+                self.page.invoke_later(callback)
+            else:
+                # 无调度 API 时直接调用（某些版本允许跨线程简单更新）
+                callback()
+        except Exception:
+            callback()
+
     def _on_type_toggle(self, v_type: str, value: bool):
         """复选框切换回调：更新选中集合并重绘当前 manifest。"""
         if value:
             self._selected_types.add(v_type)
         else:
             self._selected_types.discard(v_type)
-        # 使用防抖合并多次切换引发的重绘请求
+        # 使用防抖合并多次切换引发的重绘请求，并使用异步渲染
         if self._manifest is not None:
-            self._schedule_render_manifest()
+            self._schedule_async_render_manifest()
 
-    def _schedule_render_manifest(self, delay: float | None = None):
-        """Schedule a debounced render of the current manifest on the UI thread.
-
-        Cancel any existing timer and create a new one. The timer callback uses
-        page.invoke_later to ensure UI updates run on the main thread.
-        """
+    def _schedule_async_render_manifest(self, delay: float | None = None):
+        """调度异步渲染当前manifest，使用防抖避免频繁操作"""
         if delay is None:
             delay = self._render_debounce_seconds
 
@@ -111,18 +218,8 @@ class CoreDownloadPage:
                 pass
 
         def _on_timer():
-            try:
-                if hasattr(self.page, "invoke_later"):
-                    self.page.invoke_later(lambda: self._render_manifest(self._manifest))
-                else:
-                    # 直接调用也可能在某些 Flet 版本工作
-                    self._render_manifest(self._manifest)
-            except Exception:
-                # 最后兜底：直接尝试渲染
-                try:
-                    self._render_manifest(self._manifest)
-                except Exception:
-                    pass
+            if self._manifest is not None:
+                self._render_manifest_async(self._manifest)
 
         t = threading.Timer(delay, _on_timer)
         t.daemon = True
@@ -151,7 +248,7 @@ class CoreDownloadPage:
         return self._filter_row
 
     def _on_refresh_click(self, e: ft.ControlEvent):
-        """用户点击刷新：重新启动后台加载并提示"""
+        """用户点击刷新：重新启动异步加载并提示"""
         # 显示顶部提示并把列表替换成加载动画
         self.page.open(ft.SnackBar(ft.Text("开始刷新版本列表")))
         # 将版本列表替换为加载占位（保证用户看到加载状态）
@@ -162,43 +259,14 @@ class CoreDownloadPage:
             )
         ]
         self.page.update()
-        self._start_background_load()
+        # 使用异步加载
+        self._async_load_versions()
 
     def _show_error(self, err: Exception | str):
         self._versions_column.controls = [
             ft.Text(f"加载版本失败: {err}", color=ft.Colors.ERROR, selectable=True)
         ]
         self.page.update()
-
-    def _start_background_load(self):
-        import threading
-
-        # 统一 UI 线程调度（兼容旧版本 Flet 没有 invoke_later 情况）
-        def _dispatch_ui(cb):
-            try:
-                # 新版 Flet
-                if hasattr(self.page, "invoke_later"):
-                    self.page.invoke_later(cb)
-                else:
-                    # 无调度 API 时直接调用（某些版本允许跨线程简单更新）
-                    cb()
-            except Exception:
-                cb()
-
-        def worker():
-            try:
-                manifest = self._load_versions()
-
-                def _ui_update(m=manifest):
-                    # 保存 manifest 以便筛选时重绘
-                    self._manifest = m
-                    self._render_manifest(m)
-
-                _dispatch_ui(_ui_update)
-            except Exception as e:  # noqa
-                _dispatch_ui(lambda err=e: self._show_error(err))
-
-        threading.Thread(target=worker, daemon=True).start()
 
     # -------------------- 交互 --------------------
     def _on_download_click(self, e: ft.ControlEvent):
@@ -215,12 +283,12 @@ class CoreDownloadPage:
                 spacing=10,
             )
         ]
-        # 启动后台线程加载
-        self._start_background_load()
+        # 启动异步加载
+        self._async_load_versions()
         # 构建包含返回、刷新按钮与筛选行的视图
         appbar = ft.AppBar(
             title=ft.Text("核心下载"),
-            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: self.page.go("/")),
+            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: self.page.go("/resources")),
             actions=[
                 ft.IconButton(ft.Icons.REFRESH, on_click=self._on_refresh_click, tooltip="刷新"),
             ],
@@ -237,3 +305,14 @@ class CoreDownloadPage:
                 ft.Container(expand=True, padding=10, content=body),
             ],
         )
+
+    def cleanup(self):
+        """清理资源，页面销毁时调用"""
+        if hasattr(self, '_executor'):
+            self._executor.shutdown(wait=False)
+        
+        if hasattr(self, '_render_debounce_timer') and self._render_debounce_timer is not None:
+            try:
+                self._render_debounce_timer.cancel()
+            except Exception:
+                pass

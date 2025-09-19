@@ -1,12 +1,9 @@
 import flet as ft
 import requests
 import os
-from flet import TextField, ElevatedButton, ListView, Row, Column, Text, Image, ProgressBar, Container, Icons, IconButton, SnackBar, FilePicker, FilePickerResultEvent
+from flet import TextField, ElevatedButton, ListView, Row, Column, Text, Image, ProgressBar, Container, Icons, IconButton, SnackBar, FilePicker, FilePickerResultEvent, AppBar
 MODRINTH_SEARCH_API = "https://api.modrinth.com/v2/search"
 MODRINTH_PROJECT_API = "https://api.modrinth.com/v2/project/"
-
-
-# 下载指定版本并显示进度条
 
 # 下载指定版本并显示进度条，支持自定义保存路径
 def download_mod_version(file_url, file_name, page, progress_bar, save_folder):
@@ -33,11 +30,11 @@ def download_mod_version(file_url, file_name, page, progress_bar, save_folder):
 
 
 def mod_download_page(page: ft.Page):
-    search_field = TextField(label="搜索模组", width=300)
-    search_btn = ElevatedButton("搜索")
+    search_field = TextField(label="搜索模组", width=600)
+    search_btn = ElevatedButton("搜索",icon=ft.Icons.SEARCH)
     mod_list = ListView(expand=True, spacing=10)
     folder_picker = FilePicker()
-    page.overlay.append(folder_picker)
+    
     download_params = {}
 
     def show_mod_intro(mod_name, mod_desc):
@@ -150,6 +147,8 @@ def mod_download_page(page: ft.Page):
     return ft.View(
         "/mod_download",
         [
+            folder_picker,
+            AppBar(title=Text("Mod下载"), leading=IconButton(icon=Icons.ARROW_BACK, on_click=lambda e: page.go("/resources"))),
             Row([
                 search_field,
                 search_btn
