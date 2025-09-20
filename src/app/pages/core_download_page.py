@@ -35,6 +35,14 @@ class CoreDownloadPage:
         self._render_lock = threading.Lock()
         self._is_rendering = False
 
+    def _on_return_click(self):
+        # 如果有视图栈则弹出当前视图并导航至栈顶路由，否则退回到模组列表路由
+        if self.page.views:
+            self.page.views.pop()
+            top_view = self.page.views[-1] if self.page.views else None
+            self.page.go(top_view.route if top_view else "/resources")
+        else:
+            self.page.go("/resources")
     # -------------------- 数据加载（异步优化） --------------------
     def _load_versions(self):
         """在线程中调用的阻塞函数，返回 manifest 字典。"""
@@ -243,7 +251,6 @@ class CoreDownloadPage:
             cb = ft.Checkbox(label=label_map.get(t, t), value=(t in self._selected_types), on_change=lambda e, tt=t: self._on_type_toggle(tt, e.control.value))
             checkboxes.append(cb)
 
-        # 只保留筛选复选框，刷新按钮在 AppBar 中已有一个
         self._filter_row = ft.Row(controls=checkboxes, alignment=ft.MainAxisAlignment.START)
         return self._filter_row
 
@@ -288,7 +295,7 @@ class CoreDownloadPage:
         # 构建包含返回、刷新按钮与筛选行的视图
         appbar = ft.AppBar(
             title=ft.Text("核心下载"),
-            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: self.page.go("/resources")),
+            leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: self._on_return_click()),
             actions=[
                 ft.IconButton(ft.Icons.REFRESH, on_click=self._on_refresh_click, tooltip="刷新"),
             ],

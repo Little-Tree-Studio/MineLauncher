@@ -90,7 +90,7 @@ class HomePage:
                             ft.TextButton(
                                 self.lang.current.get("home", {}).get("top", {}).get("settings", "设置"),
                                 icon=ft.Icons.SETTINGS,
-                                on_click=lambda _: self.page.go("/start"),
+                                on_click=lambda _: self.page.go("/settings"),
                             ),
                             ft.TextButton(
                                 self.lang.current.get("home", {}).get("top", {}).get("about", "关于"),

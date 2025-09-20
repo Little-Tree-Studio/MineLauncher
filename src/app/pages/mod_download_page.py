@@ -30,8 +30,8 @@ def download_mod_version(file_url, file_name, page, progress_bar, save_folder):
 
 
 def mod_download_page(page: ft.Page):
-    search_field = TextField(label="搜索模组", width=600)
-    search_btn = ElevatedButton("搜索",icon=ft.Icons.SEARCH)
+    search_field = TextField(label="搜索模组", width=600, border=ft.InputBorder.UNDERLINE)
+    search_btn = ElevatedButton("搜索",icon=ft.Icons.SEARCH, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),height=40)
     mod_list = ListView(expand=True, spacing=10)
     folder_picker = FilePicker()
     
@@ -57,7 +57,7 @@ def mod_download_page(page: ft.Page):
         query = search_field.value.strip()
         if not query:
             page.snack_bar = SnackBar(Text("请输入关键词"))
-            page.snack_bar.open = True
+            page.open(page.snack_bar)
             page.update()
             return
         params = {"query": query, "limit": 20}
@@ -152,7 +152,7 @@ def mod_download_page(page: ft.Page):
             Row([
                 search_field,
                 search_btn
-            ], alignment="center"),
+            ], alignment=ft.MainAxisAlignment.START),
             mod_list
         ]
     )
