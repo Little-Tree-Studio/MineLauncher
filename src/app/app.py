@@ -34,11 +34,11 @@ class App:
         # 路由变化处理: 根据 page.route 构建对应视图
         def route_change(e: ft.RouteChangeEvent):
             # 只有在视图栈非空且当前顶视图路由与目标路由不同时，才尝试弹出
-            if page.views and page.views[-1].route != page.route:
-                try:
-                    page.views.pop()
-                except IndexError:
-                    pass
+            # if page.views and page.views[-1].route != page.route:
+            #     try:
+            #         page.views.pop()
+            #     except IndexError:
+            #         pass
 
             # 如果视图栈中已存在目标路由，直接更新即可（避免重建导致状态丢失）
             for v in page.views:
