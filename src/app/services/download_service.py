@@ -9,7 +9,6 @@ from typing import List, Dict, Optional, Callable, Tuple
 from pathlib import Path
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from ..info import VER
 from ..info import UA
 
 

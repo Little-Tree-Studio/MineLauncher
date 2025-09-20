@@ -13,6 +13,10 @@ class I18nService:
         file = self.lang_dir / f"{lang}.yaml"
         try:
             return yaml.safe_load(file.read_text(encoding="utf-8")) or {}
+        except FileNotFoundError:
+            from app.services.logger_service import LoggerService
+            LoggerService().logger.exception("加载语言文件失败: 语言文件未找到")
+            return {}
         except Exception:
             from app.services.logger_service import LoggerService
             LoggerService().logger.exception(f"加载语言文件失败: {file}")

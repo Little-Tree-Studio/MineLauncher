@@ -31,6 +31,7 @@ class App:
         # convert to string (file path) so it can be encoded.
         page.fonts = {"Sara": str(ASSET_DIR / "fonts" / "Sarasa UI SC.ttf")}
         page.theme = ft.Theme(font_family="Sara")
+        page.theme_mode = ft.ThemeMode.LIGHT if self.cfg.load().get("Theme", "light") == "light" else ft.ThemeMode.DARK if self.cfg.load().get("Theme", "light") == "dark" else ft.ThemeMode.SYSTEM
         # 路由变化处理: 根据 page.route 构建对应视图
         def route_change(e: ft.RouteChangeEvent):
             # 只有在视图栈非空且当前顶视图路由与目标路由不同时，才尝试弹出
@@ -48,11 +49,11 @@ class App:
 
 
             # 对于顶层路由（主页、关于等），清空视图栈并重新建立；对于子页面（例如模组详情）则在栈上追加，保留之前的搜索页状态
-            # if not page.route.startswith("/mod_download/"):
-            #     page.views.clear()
+            if not page.route.startswith("/mod_download/"):
+                page.views.clear()
             
             
-            print(f"导航至 {page.route}，当前视图栈长度: {len(page.views)}")
+            self.logger.debug(f"导航至 {page.route}，当前视图栈长度: {len(page.views)}")
             if page.route == "/start":
                 page.views.append(FirstRunPage(lambda: page.go("/")).build())
             elif page.route == "/about":
