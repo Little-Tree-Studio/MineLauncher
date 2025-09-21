@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 class ConfigService:
-    DEFAULT = {"Language": "zh-cn"}
+    DEFAULT = {"Language": "zh-cn", "Theme": "system"}
 
     def __init__(self) -> None:
         self.path = Path("MineLauncher/config/config.toml")
