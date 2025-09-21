@@ -64,6 +64,9 @@ class App:
                 page.views.append(CoreDownloadPage(page).build())
             elif page.route == "/mod_download":
                 page.views.append(mod_download_page(page))
+            elif page.route == "/shader_download":
+                from app.pages.shader_download_page import shader_download_page
+                page.views.append(shader_download_page(page))
             elif page.route.startswith("/mod_download/"):
                 page.views.append(mod_detail_page(page))
             elif page.route == "/settings":
