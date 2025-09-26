@@ -16,7 +16,18 @@ def mod_detail_page(page: ft.Page):
     download_params = {}
 
     # 获取模组详情
-    resp = requests.get(MODRINTH_PROJECT_API + mod_id)
+    try:
+        resp = requests.get(MODRINTH_PROJECT_API + mod_id, proxies={})
+    except requests.exceptions.ProxyError as ex:
+        return ft.View(
+            f"/mod_download/{mod_id}",
+            [Text(f"网络/代理错误: {ex}", size=20, color="red")]
+        )
+    except Exception as ex:
+        return ft.View(
+            f"/mod_download/{mod_id}",
+            [Text(f"模组详情获取失败: {ex}", size=20, color="red")]
+        )
     if resp.status_code == 200:
         mod_info = resp.json()
     else:
@@ -25,7 +36,18 @@ def mod_detail_page(page: ft.Page):
             [Text("模组详情获取失败", size=20, color="red")]
         )
     # 获取所有版本
-    v_resp = requests.get(MODRINTH_PROJECT_API + f"{mod_id}/version")
+    try:
+        v_resp = requests.get(MODRINTH_PROJECT_API + f"{mod_id}/version", proxies={})
+    except requests.exceptions.ProxyError as ex:
+        return ft.View(
+            f"/mod_download/{mod_id}",
+            [Text(f"网络/代理错误: {ex}", size=20, color="red")]
+        )
+    except Exception as ex:
+        return ft.View(
+            f"/mod_download/{mod_id}",
+            [Text(f"模组版本获取失败: {ex}", size=20, color="red")]
+        )
     if v_resp.status_code == 200:
         versions = v_resp.json()
         for v in versions:
@@ -69,18 +91,34 @@ def mod_detail_page(page: ft.Page):
 
     folder_picker.on_result = on_folder_result
 
-    # 详情内容参考PCL，展示图标、名称、简介、作者、下载数、版本选择、下载按钮
-
-    # 返回上一视图而不是始终创建一个新的搜索页面
+    # 详情内容参考PCL，展示更多MODRINTH信息
     def on_return_click(e):
-        # 如果有视图栈则弹出当前视图并导航至栈顶路由，否则退回到模组列表路由
         if page.views:
             page.views.pop()
             top = page.views[-1] if page.views else None
-            # 如果弹出后没有其它视图，回到模组搜索页；否则回到栈顶视图路由
             page.go(top.route if top else "/mod_download")
         else:
             page.go("/mod_download")
+
+    # 分类
+    categories = mod_info.get("categories", [])
+    categories_str = ", ".join(categories) if categories else "无"
+    # 支持的游戏版本
+    game_versions = set()
+    for v in versions:
+        for gv in v.get("game_versions", []):
+            game_versions.add(gv)
+    game_versions_str = ", ".join(sorted(game_versions)) if game_versions else "未知"
+    # 最新更新时间
+    latest_update = mod_info.get("updated", "")
+    # 项目网址
+    project_url = mod_info.get("project_url", "")
+    # 许可证
+    license_str = mod_info.get("license", {}).get("name", "未知")
+    # 依赖
+    dependencies = mod_info.get("dependencies", [])
+    dependencies_str = ", ".join([d.get("version_id", "") for d in dependencies]) if dependencies else "无"
+
     return ft.View(
         f"/mod_download/{mod_id}",
         [
@@ -91,6 +129,12 @@ def mod_detail_page(page: ft.Page):
                     Text(mod_info.get("description", "暂无简介"), size=14),
                     Text(f"作者: {', '.join([a.get('name', '') for a in mod_info.get('authors', [])])}", size=12),
                     Text(f"下载数: {mod_info.get('downloads', 0)}", size=12),
+                    Text(f"分类: {categories_str}", size=12),
+                    Text(f"支持游戏版本: {game_versions_str}", size=12),
+                    Text(f"最新更新时间: {latest_update}", size=12),
+                    Text(f"许可证: {license_str}", size=12),
+                    Text(f"依赖: {dependencies_str}", size=12),
+                    Text(f"项目网址: {project_url}", size=12, color="blue"),
                 ], expand=True),
             ], alignment="start"),
             Row([

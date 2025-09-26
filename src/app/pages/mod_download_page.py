@@ -60,6 +60,14 @@ def mod_download_page(page: ft.Page):
             page.open(page.snack_bar)
             page.update()
             return
+        # 显示加载动画
+        mod_list.controls.clear()
+        loading = ft.Row([
+            ft.ProgressRing(width=40, height=40),
+            ft.Text("正在搜索模组，请稍候...", theme_style="bodyMedium")
+        ], alignment=ft.MainAxisAlignment.CENTER)
+        mod_list.controls.append(loading)
+        page.update()
         params = {"query": query, "limit": 20}
         resp = requests.get(MODRINTH_SEARCH_API, params=params)
         mod_list.controls.clear()

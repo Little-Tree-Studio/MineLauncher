@@ -42,7 +42,43 @@ class SettingsPage:
         self.page.theme_mode = ft.ThemeMode.LIGHT if theme == "light" else ft.ThemeMode.DARK if theme == "dark" else ft.ThemeMode.SYSTEM
         self.page.update()
 
+    def _get_java_paths(self):
+        import os
+        java_paths = set()
+        possible_dirs = [
+            os.environ.get('JAVA_HOME', ''),
+            os.path.join(os.environ.get('ProgramFiles', ''), 'Java'),
+            os.path.join(os.environ.get('ProgramFiles(x86)', ''), 'Java'),
+            os.path.join(os.environ.get('ProgramW6432', ''), 'Java'),
+            os.path.join(os.environ.get('LocalAppData', ''), 'Programs', 'AdoptOpenJDK'),
+        ]
+        for base in possible_dirs:
+            if base and os.path.exists(base):
+                for root, dirs, files in os.walk(base):
+                    for file in files:
+                        if file.lower() == 'java.exe':
+                            java_paths.add(os.path.join(root, file))
+        for p in os.environ.get('PATH', '').split(os.pathsep):
+            exe = os.path.join(p, 'java.exe')
+            if os.path.exists(exe):
+                java_paths.add(exe)
+        return sorted(java_paths)
+
+    def _change_java(self, e: ft.ControlEvent):
+        selected = e.control.value
+        self.cfg.save({**self.cfg.load(), "JavaPath": selected})
+        self.page.snack_bar = ft.SnackBar(ft.Text(f"已选择Java: {selected}"))
+        self.page.snack_bar.open = True
+        self.page.update()
+
     def build(self) -> ft.View:
+        java_paths = self._get_java_paths()
+        java_dd = ft.Dropdown(
+            options=[ft.dropdown.Option(j, j) for j in java_paths] if java_paths else [ft.dropdown.Option("", "未找到Java，请检查环境变量或手动设置。")],
+            value=self.cfg.load().get("JavaPath", java_paths[0] if java_paths else ""),
+            width=500,
+            on_change=self._change_java
+        )
         return ft.View(
             "/settings",
             [
@@ -138,6 +174,16 @@ class SettingsPage:
                                                     on_change=self._change_color_mode,
                                                 ),
                                                 
+                                            ],
+                                            alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                                        ),
+                                        ft.Row(
+                                            [
+                                                ft.Row([
+                                                    ft.Icon(ft.Icons.CODE),
+                                                    ft.Text("Java路径"),
+                                                ]),
+                                                java_dd
                                             ],
                                             alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                                         ),

@@ -59,6 +59,14 @@ def shader_download_page(page: ft.Page):
             page.open(page.snack_bar)
             page.update()
             return
+        # 显示加载动画
+        shader_list.controls.clear()
+        loading = ft.Row([
+            ft.ProgressRing(width=40, height=40),
+            ft.Text("正在搜索光影，请稍候...", theme_style="bodyMedium")
+        ], alignment=ft.MainAxisAlignment.CENTER)
+        shader_list.controls.append(loading)
+        page.update()
         # 使用modrinth API搜索光影（project_type=shader）
         params = {"query": query, "limit": 20, "facets": "[[\"project_type:shader\"]]"}
         try:
