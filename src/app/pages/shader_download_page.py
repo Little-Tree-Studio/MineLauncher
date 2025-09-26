@@ -1,6 +1,8 @@
 
 import flet as ft
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import os
 from flet import TextField, ElevatedButton, ListView, Row, Column, Text, Image, ProgressBar, Container, Icons, IconButton, SnackBar, FilePicker, FilePickerResultEvent, AppBar
 
@@ -32,6 +34,9 @@ def download_shader(file_url, file_name, page, progress_bar, save_folder):
 
 
 def shader_download_page(page: ft.Page):
+    session = requests.Session()
+    retries = Retry(total=3, backoff_factor=0.5)
+    session.mount('https://', HTTPAdapter(max_retries=retries))
     search_field = TextField(label="搜索光影包", width=600, border=ft.InputBorder.UNDERLINE)
     search_btn = ElevatedButton("搜索",icon=ft.Icons.SEARCH, style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),height=40)
     shader_list = ListView(expand=True, spacing=10)
@@ -56,7 +61,13 @@ def shader_download_page(page: ft.Page):
             return
         # 使用modrinth API搜索光影（project_type=shader）
         params = {"query": query, "limit": 20, "facets": "[[\"project_type:shader\"]]"}
-        resp = requests.get(MODRINTH_SEARCH_API, params=params)
+        try:
+            resp = session.get(MODRINTH_SEARCH_API, params=params, timeout=10)
+        except Exception as ex:
+            shader_list.controls.clear()
+            shader_list.controls.append(Text(f"网络连接失败: {ex}"))
+            page.update()
+            return
         shader_list.controls.clear()
         if resp.status_code == 200:
             for shader in resp.json()["hits"]:
@@ -65,7 +76,11 @@ def shader_download_page(page: ft.Page):
                 desc = shader.get("description", "")
                 icon_url = shader.get("icon_url", "")
                 files_api = f"https://api.modrinth.com/v2/project/{shader_id}/version"
-                v_resp = requests.get(files_api)
+                try:
+                    v_resp = session.get(files_api, timeout=10)
+                except Exception as ex:
+                    shader_list.controls.append(Text(f"获取版本信息失败: {ex}"))
+                    continue
                 version_options = []
                 version_files = []
                 if v_resp.status_code == 200:
