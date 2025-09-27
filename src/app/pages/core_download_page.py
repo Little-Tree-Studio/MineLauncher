@@ -277,9 +277,77 @@ class CoreDownloadPage:
 
     # -------------------- 交互 --------------------
     def _on_download_click(self, e: ft.ControlEvent):
+        from app.services.download_manager import DownloadManager, DownloadTask
         version_id = e.control.data
-        self.page.open(ft.SnackBar(ft.Text(f"TODO: 下载版本 {version_id}")))
+        task_id = f"core_{version_id}"
+        task = DownloadTask(task_id=task_id, name=f"核心版本 {version_id}")
+        manager = DownloadManager.instance()
+        manager.add_task(task)
+        self.page.snack_bar = ft.SnackBar(ft.Text(f"正在下载 {version_id} ... (已加入下载管理)"))
+        self.page.snack_bar.open = True
         self.page.update()
+
+        def progress_callback(progress):
+            # 实时更新全局任务进度（支持大文件）
+            downloaded = getattr(progress, 'finished_files', 0)
+            total = getattr(progress, 'total_files', 1)
+            percent = getattr(progress, 'total_percentage', 0)
+            status = getattr(progress, 'status', "下载中")
+            # 让 DownloadTask 的 progress 实时反映 percent
+            with task._lock:
+                task.downloaded = downloaded
+                task.total = total
+                task.progress = percent / 100
+                task.status = status
+            # 通知刷新
+            manager._notify()
+            # 兼容原有进度条和snackbar
+            if hasattr(self, '_download_progress_bar'):
+                self._download_progress_bar.value = percent / 100
+            self.page.snack_bar = ft.SnackBar(ft.Text(f"{status} ({downloaded}/{total})"))
+            self.page.snack_bar.open = True
+            self.page.update()
+
+        def do_download():
+            file_paths = set()
+            def file_paths_cb(file_path, temp_path):
+                if file_path:
+                    file_paths.add(file_path)
+                if temp_path:
+                    file_paths.add(temp_path)
+            try:
+                print(f"[下载线程] 开始下载: {version_id}, 路径: {self.mc_root}")
+                downloader = MinecraftDownloader(self.mc_root, progress_callback=progress_callback)
+                ok = downloader.download_version(version_id, cancel_event=task._cancel_event, file_paths_cb=file_paths_cb)
+                if ok:
+                    msg = f"版本 {version_id} 下载完成"
+                    task.update(downloaded=task.total, status=msg)
+                else:
+                    msg = f"版本 {version_id} 下载失败"
+                    task.update(status=msg, error=msg)
+                print(f"[下载线程] 结束: {msg}")
+                self.page.snack_bar = ft.SnackBar(ft.Text(msg))
+                self.page.snack_bar.open = True
+                self.page.update()
+            except Exception as ex:
+                import traceback
+                tb = traceback.format_exc()
+                print(f"[下载线程] 异常: {ex}\n{tb}")
+                err_msg = f"下载异常: {ex}"
+                task.update(status=err_msg, error=str(ex))
+                self.page.snack_bar = ft.SnackBar(ft.Text(err_msg))
+                self.page.snack_bar.open = True
+                self.page.update()
+            # 取消时清理所有已下载文件
+            if task.is_cancelled():
+                import os
+                for fp in file_paths:
+                    try:
+                        if os.path.exists(fp):
+                            os.remove(fp)
+                    except Exception:
+                        pass
+        threading.Thread(target=do_download, daemon=True).start()
 
     # -------------------- 构建视图 --------------------
     def build(self) -> ft.View:

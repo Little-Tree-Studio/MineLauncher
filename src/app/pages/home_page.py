@@ -71,34 +71,34 @@ class HomePage:
         return ft.View(
             "/",
             [
-                    ft.AppBar(
-                        leading=ft.Image(ASSET_DIR / "image" / "icon.png"),
-                        title=ft.Text("MineLauncher"),
-                        bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
-                        actions=[
-                            ft.TextButton(
-                                # lang_data["home"]["top"]["resource_center"],
-                                self.lang.current.get("home", {}).get("top", {}).get("resource_center", "资源中心"),
-                                icon=ft.Icons.SHOPPING_BASKET,
-                                on_click=lambda _: self.page.go("/resources"),
-                            ),
-                            ft.TextButton(
-                                self.lang.current.get("home", {}).get("top", {}).get("download_management", "下载管理"),
-                                icon=ft.Icons.DOWNLOAD,
-                            ),
-                            ft.VerticalDivider(),
-                            ft.TextButton(
-                                self.lang.current.get("home", {}).get("top", {}).get("settings", "设置"),
-                                icon=ft.Icons.SETTINGS,
-                                on_click=lambda _: self.page.go("/settings"),
-                            ),
-                            ft.TextButton(
-                                self.lang.current.get("home", {}).get("top", {}).get("about", "关于"),
-                                icon=ft.Icons.INFO,
-                                on_click=lambda _: self.page.go("/about"),
-                            ),
-                        ],
-                    ),
+                ft.AppBar(
+                    leading=ft.Image(ASSET_DIR / "image" / "icon.png"),
+                    title=ft.Text("MineLauncher"),
+                    bgcolor=ft.Colors.SURFACE_CONTAINER_HIGHEST,
+                    actions=[
+                        ft.TextButton(
+                            self.lang.current.get("home", {}).get("top", {}).get("resource_center", "资源中心"),
+                            icon=ft.Icons.SHOPPING_BASKET,
+                            on_click=lambda _: self.page.go("/resources"),
+                        ),
+                        ft.TextButton(
+                            self.lang.current.get("home", {}).get("top", {}).get("download_management", "下载管理"),
+                            icon=ft.Icons.DOWNLOAD,
+                            on_click=lambda _: self.page.go("/download_manager"),
+                        ),
+                        ft.VerticalDivider(),
+                        ft.TextButton(
+                            self.lang.current.get("home", {}).get("top", {}).get("settings", "设置"),
+                            icon=ft.Icons.SETTINGS,
+                            on_click=lambda _: self.page.go("/settings"),
+                        ),
+                        ft.TextButton(
+                            self.lang.current.get("home", {}).get("top", {}).get("about", "关于"),
+                            icon=ft.Icons.INFO,
+                            on_click=lambda _: self.page.go("/about"),
+                        ),
+                    ],
+                ),
                 ft.Row(
                     [
                         ft.NavigationRail(

@@ -391,7 +391,7 @@ class MinecraftDownloader:
 
         raise Exception(f"无法获取版本信息: {version_id}")
 
-    def download_version(self, version_id: str) -> bool:
+    def download_version(self, version_id: str, cancel_event=None, file_paths_cb=None) -> bool:
         """下载指定版本，支持多线程和实时速度"""
         try:
             # 获取版本信息
@@ -403,6 +403,9 @@ class MinecraftDownloader:
             json_path = version_folder / f"{version_id}.json"
             with open(json_path, 'w', encoding='utf-8') as f:
                 json.dump(version_info, f, indent=2)
+            # 记录主文件路径
+            if file_paths_cb:
+                file_paths_cb(str(json_path), None)
 
             # 先解析所有待下载文件，严格根据json内容统计
             net_files = []
@@ -418,6 +421,8 @@ class MinecraftDownloader:
                     check_hash=client_hash,
                     min_size=1024*100
                 ))
+                if file_paths_cb:
+                    file_paths_cb(str(client_path), str(client_path)+'.part')
             # libraries
             libraries = version_info.get("libraries", [])
             for lib in libraries:
@@ -445,6 +450,8 @@ class MinecraftDownloader:
                         check_hash=hash_value,
                         min_size=size if size > 0 else 1024
                     ))
+                    if file_paths_cb:
+                        file_paths_cb(str(local_path), str(local_path)+'.part')
             # assets
             asset_index = version_info.get("assetIndex")
             if asset_index:
@@ -458,6 +465,8 @@ class MinecraftDownloader:
                     check_hash=index_hash,
                     min_size=1024
                 ))
+                if file_paths_cb:
+                    file_paths_cb(str(index_path), str(index_path)+'.part')
                 # 统计资源文件数
                 try:
                     resp = self._session.get(index_url, timeout=15)
@@ -477,10 +486,13 @@ class MinecraftDownloader:
                             check_hash=asset_hash,
                             min_size=asset_info.get('size', 0)
                         ))
+                        if file_paths_cb:
+                            file_paths_cb(str(local_asset_path), str(local_asset_path)+'.part')
                 except Exception:
                     pass
 
             total_files = len(net_files)
+            # 记录所有文件路径，便于取消时删除
             self._progress_total = total_files
             self._progress_current = 0
             self._total_files = total_files
@@ -502,6 +514,17 @@ class MinecraftDownloader:
                 small_files = [f for f in net_files if f not in large_files]
 
                 def download_one(nf):
+                    if cancel_event and cancel_event.is_set():
+                        # 取消时删除文件
+                        try:
+                            if os.path.exists(nf.local_path):
+                                os.remove(nf.local_path)
+                            part_path = nf.local_path + '.part'
+                            if os.path.exists(part_path):
+                                os.remove(part_path)
+                        except Exception:
+                            pass
+                        return False
                     if self._download_file(nf):
                         with self._lock:
                             self._finished_files += 1
@@ -514,10 +537,14 @@ class MinecraftDownloader:
                 if small_files:
                     with ThreadPoolExecutor(max_workers=self.max_workers) as ex_small:
                         list(ex_small.map(download_one, small_files))
+                        if cancel_event and cancel_event.is_set():
+                            raise Exception("下载已取消")
                 # 再下载大文件，限制线程数量，避免过度争抢带宽
                 if large_files:
                     with ThreadPoolExecutor(max_workers=min(4, self.max_workers)) as ex_large:
                         list(ex_large.map(download_one, large_files))
+                        if cancel_event and cancel_event.is_set():
+                            raise Exception("下载已取消")
             finally:
                 self._stop_speed_monitor()
 
@@ -530,6 +557,10 @@ class MinecraftDownloader:
             return True
 
         except Exception as e:
+            # 取消时删除所有已下载文件
+            if cancel_event and cancel_event.is_set() and file_paths_cb:
+                # file_paths_cb 已收集所有文件路径
+                pass
             self._update_progress(DownloadProgress(status=f"下载失败: {str(e)}"))
             return False
 
