@@ -3,14 +3,16 @@ name = "Minelauncher"
 version = "0.1.0"
 description = "A highly customizable Minecraft launcher Supports startup and management of bedrock and Java"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "shu-shu-1", email = "zs3458222@outlook.com" }
 ]
 dependencies = [
-  "flet==0.27.6",
+  "flet[all]",
+  "littledl>=0.1.0",
   "loguru>=0.7.3",
   "orjson>=3.11.1",
+  "pyyaml>=6.0.3",
   "requests>=2.32.4",
   "rtoml>=0.12.0",
 ]
@@ -33,14 +35,10 @@ copyright = "Copyright (C) 2025 by Little Tree Studio"
 [tool.flet.app]
 path = "src"
 
-[tool.uv]
-dev-dependencies = [
-    "flet[all]==0.27.6",
+[dependency-groups]
+dev = [
+    "flet[all]",
 ]
 
 [tool.poetry]
 package-mode = false
-
-[tool.poetry.group.dev.dependencies]
-flet = {extras = ["all"], version = "0.27.6"}
-

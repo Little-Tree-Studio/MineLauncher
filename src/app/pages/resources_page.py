@@ -6,11 +6,16 @@ class ResourcesPage:
     def __init__(self, page: ft.Page):
         self.page = page
 
+    def _navigate(self, route: str):
+        async def do_navigate():
+            await self.page.push_route(route)
+        self.page.run_task(do_navigate)
+
     def build(self) -> ft.View:
         return ft.View(
-            "/resources",
-            [
-                ft.AppBar(title=ft.Text("资源中心"), automatically_imply_leading=True, leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: self.page.go("/"))),
+            route="/resources",
+            controls=[
+                ft.AppBar(title=ft.Text("资源中心"), automatically_imply_leading=True, leading=ft.IconButton(ft.Icons.ARROW_BACK, on_click=lambda _: self._navigate("/"))),
                 ft.Column(
                     [
                         ft.Row(
@@ -18,7 +23,7 @@ class ResourcesPage:
                                 ft.Container(
                                     content=ft.Column(
                                         controls=[
-                                            ft.Icon(name=ft.Icons.API),
+                                            ft.Icon(ft.Icons.API),
                                             ft.Text("核心下载"),
                                         ],
                                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -28,12 +33,12 @@ class ResourcesPage:
                                     ink=True,
                                     width=100,
                                     height=100,
-                                    on_click=lambda _: self.page.go("/core_download")
+                                    on_click=lambda _: self._navigate("/core_download")
                                 ),
                                 ft.Container(
                                     content=ft.Column(
                                         controls=[
-                                            ft.Icon(name=ft.Icons.EXTENSION),
+                                            ft.Icon(ft.Icons.EXTENSION),
                                             ft.Text("Mod下载"),
                                         ],
                                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -43,12 +48,12 @@ class ResourcesPage:
                                     ink=True,
                                     width=100,
                                     height=100,
-                                    on_click=lambda _: self.page.go("/mod_download")
+                                    on_click=lambda _: self._navigate("/mod_download")
                                 ),
                                 ft.Container(
                                     content=ft.Column(
                                         controls=[
-                                            ft.Icon(name=ft.Icons.INVENTORY),
+                                            ft.Icon(ft.Icons.INVENTORY),
                                             ft.Text("整合包下载"),
                                         ],
                                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -58,12 +63,12 @@ class ResourcesPage:
                                     ink=True,
                                     width=100,
                                     height=100,
-                                    on_click=lambda _: self.page.go("/mod_download")
+                                    on_click=lambda _: self._navigate("/mod_download")
                                 ),
                                 ft.Container(
                                     content=ft.Column(
                                         controls=[
-                                            ft.Icon(name=ft.Icons.LIGHT_MODE),
+                                            ft.Icon(ft.Icons.LIGHT_MODE),
                                             ft.Text("光影下载"),
                                         ],
                                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -73,7 +78,7 @@ class ResourcesPage:
                                     ink=True,
                                     width=100,
                                     height=100,
-                                    on_click=lambda _: self.page.go("/shader_download")
+                                    on_click=lambda _: self._navigate("/shader_download")
                                 ),
                             ],
                             alignment=ft.MainAxisAlignment.SPACE_AROUND,
