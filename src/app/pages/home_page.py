@@ -112,6 +112,7 @@ class HomePage:
         java_path = self.cfg.load().get("Java", {}).get("Path", "")
         if not java_path or not os.path.exists(java_path):
             from app.services.java_detector import JavaDetector
+
             jd = JavaDetector()
             javas = await jd.scan_async()
             if javas:
@@ -165,7 +166,7 @@ class HomePage:
                 "",
                 None,
                 False,
-                update_progress
+                update_progress,
             )
 
             if not config:
@@ -204,7 +205,9 @@ class HomePage:
                 is_dead = True
                 try:
                     if proc.stderr:
-                        error_output = proc.stderr.read().decode('utf-8', errors='replace')
+                        error_output = proc.stderr.read().decode(
+                            "utf-8", errors="replace"
+                        )
                 except Exception:
                     pass
                 if not error_output:
@@ -214,7 +217,9 @@ class HomePage:
             if dialog.open:
                 if proc and not is_dead:
                     dialog.title = ft.Text("启动成功")
-                    dialog.content = ft.Text(f"游戏 {version_folder} 已成功启动，你可以关闭此页面了。")
+                    dialog.content = ft.Text(
+                        f"游戏 {version_folder} 已成功启动，你可以关闭此页面了。"
+                    )
                     dialog.actions = [ft.TextButton("关闭", on_click=close_dialog)]
                     dialog.update()
                 else:
@@ -895,6 +900,34 @@ class HomePage:
                 ft.Column(
                     alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     controls=[
+                        ft.Container(
+                            content=ft.Row(
+                                [
+                                    ft.Icon(ft.Icons.WARNING, color="#FF9800"),
+                                    ft.Text(
+                                        "早期测试版本 - 由于 flet 更新，部分页面可能存在兼容性错误",
+                                        color="#E65100",
+                                    ),
+                                ]
+                            ),
+                            bgcolor="#FFF3E0",
+                            padding=10,
+                            border_radius=5,
+                        ),
+                        ft.Container(
+                            content=ft.Row(
+                                [
+                                    ft.Icon(ft.Icons.INFO, color="#9E9E9E"),
+                                    ft.Text(
+                                        "本程序为小树工作室早期作品，未来可能放弃维护或重构，不代表目前水平",
+                                        color="#757575",
+                                    ),
+                                ]
+                            ),
+                            bgcolor="#F5F5F5",
+                            padding=10,
+                            border_radius=5,
+                        ),
                         ft.Row(
                             [
                                 ft.Text(value="MineLauncher", size=45),
