@@ -12,6 +12,7 @@ from app.services.account_service import (
     LOGIN_NIDE,
     LOGIN_AUTHLIB,
     LOGIN_MICROSOFT,
+    LoginType,
 )
 from app.services.oauth_funcs import (
     microsoft_login as oauth_microsoft_login,
@@ -20,6 +21,7 @@ from app.services.oauth_funcs import (
     xbl_to_xsts,
     xsts_to_mc_token,
     get_mc_profile,
+    check_minecraft_ownership,
 )
 
 
@@ -34,13 +36,14 @@ class AuthService:
         u = uuid_lib.UUID(bytes=md5_bytes)
         uuid = u.hex
 
-        return LoginResult(
-            uuid=uuid,
+        account = self.account_service.create_legacy_account(
             username=username,
-            access_token="0",
-            login_type=LOGIN_LEGACY,
-            profile_json={"id": uuid, "name": username},
+            skin_type=skin_type,
+            skin_name=skin_name or username,
         )
+        self.account_service.set_last_account(account.account_id)
+
+        return account.to_login_result()
 
     def microsoft_login(self, force_refresh: bool = False) -> LoginResult:
         uuid, username, auth_data = oauth_microsoft_login()
@@ -132,8 +135,8 @@ class AuthService:
         profile_name = selected_profile["name"]
 
         account = Account(
-            account_id=None,
-            login_type=login_type,
+            account_id="",
+            login_type=LoginType(login_type),
             username=profile_name,
             uuid=profile_id,
             access_token=access_token,

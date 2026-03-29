@@ -16,7 +16,7 @@ from pathlib import Path
 import requests
 from dataclasses import dataclass, field
 
-from littledl import (
+from ..littledl import (
     download_file,
     download_file_sync,
     batch_download_sync,
@@ -31,11 +31,12 @@ from littledl import (
     ProxyConfig,
     ProxyMode,
     BatchDownloader,
+    MCBatchDownloader,
     BatchProgress,
     FileTask,
     FileTaskStatus,
 )
-from littledl.batch import FileProgress
+from ..littledl.batch import FileProgress
 
 from ..info import UA
 from ..services.logger_service import LoggerService
@@ -668,10 +669,9 @@ class MinecraftDownloader:
         self, net_files: List[NetFile]
     ) -> Tuple[bool, List[str]]:
         """异步批量下载实现"""
-        downloader = BatchDownloader(
-            max_concurrent_files=min(8, len(net_files)),
-            max_concurrent_chunks_per_file=self.config.max_chunks,
-            enable_adaptive_concurrency=True,
+        downloader = MCBatchDownloader(
+            max_concurrent_files=min(16, len(net_files)),
+            max_total_threads=20,
         )
 
         failed_files: List[str] = []

@@ -88,6 +88,9 @@ class HomePage:
 
     def _do_launch_game(self):
         """启动游戏"""
+        self.page.run_task(self._do_launch_game_async)
+
+    async def _do_launch_game_async(self):
         if not self._selected_launch_version:
             self._show_message("请先选择启动版本")
             return
@@ -106,27 +109,71 @@ class HomePage:
             self._show_message("未设置版本目录")
             return
 
-        java_path = (
-            r"D:\Program Files\Eclipse Adoptium\jdk-25.0.2.10-hotspot\bin\java.exe"
+        java_path = self.cfg.load().get("Java", {}).get("Path", "")
+        if not java_path or not os.path.exists(java_path):
+            from app.services.java_detector import JavaDetector
+            jd = JavaDetector()
+            javas = await jd.scan_async()
+            if javas:
+                java_path = javas[0].path
+            else:
+                self._show_message("未找到可用的 Java，请在设置中配置。")
+                return
+
+        progress_text = ft.Text("准备启动...", size=14)
+        dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("启动游戏"),
+            content=ft.Row(
+                [
+                    ft.ProgressRing(width=24, height=24, stroke_width=2),
+                    progress_text,
+                ],
+                alignment=ft.MainAxisAlignment.START,
+            ),
         )
+        self.page.show_dialog(dialog)
+
+        def update_progress(msg: str):
+            progress_text.value = msg
+            try:
+                progress_text.update()
+            except Exception:
+                pass
+
+        def close_dialog(e):
+            self.page.pop_dialog()
 
         username = self._current_login_result.username
         access_token = self._current_login_result.access_token
 
         try:
             launch_service = LaunchService()
-            config = launch_service.build_launch_config(
-                version_folder=version_folder,
-                versions_root=Path(version_root),
-                java_path=java_path,
-                username=username,
-                access_token=access_token,
-                width=854,
-                height=480,
+            config = await asyncio.to_thread(
+                launch_service.build_launch_config,
+                version_folder,
+                Path(version_root),
+                java_path,
+                username,
+                access_token,
+                854,
+                480,
+                "2G",
+                "512M",
+                "",
+                0,
+                "",
+                None,
+                False,
+                update_progress
             )
 
             if not config:
-                self._show_message("构建启动配置失败")
+                if dialog.open:
+                    dialog.title = ft.Text("启动失败")
+                    dialog.content = ft.Text("构建启动配置失败，请查看日志。")
+                    dialog.actions = [ft.TextButton("关闭", on_click=close_dialog)]
+                    dialog.update()
                 return
 
             self.logger.info(f"=== Launch Config ===")
@@ -146,17 +193,46 @@ class HomePage:
                 f"Game args ({len(config.game_arguments)}): {' '.join(config.game_arguments[:15])}"
             )
 
-            proc = launch_service.launch(config)
-            if proc:
-                self._show_message(f"正在启动: {version_folder}")
-            else:
-                self._show_message("启动失败")
+            update_progress("正在执行启动命令...")
+            proc = await asyncio.to_thread(launch_service.launch, config)
+
+            # 稍微等待检查进程是否立刻退出
+            await asyncio.sleep(1.0)
+            is_dead = False
+            error_output = ""
+            if proc and proc.poll() is not None:
+                is_dead = True
+                try:
+                    if proc.stderr:
+                        error_output = proc.stderr.read().decode('utf-8', errors='replace')
+                except Exception:
+                    pass
+                if not error_output:
+                    error_output = f"进程意外退出，退出码: {proc.returncode}"
+                self.logger.error(f"Process ended quickly: {error_output}")
+
+            if dialog.open:
+                if proc and not is_dead:
+                    dialog.title = ft.Text("启动成功")
+                    dialog.content = ft.Text(f"游戏 {version_folder} 已成功启动，你可以关闭此页面了。")
+                    dialog.actions = [ft.TextButton("关闭", on_click=close_dialog)]
+                    dialog.update()
+                else:
+                    dialog.title = ft.Text("启动失败")
+                    dialog.content = ft.Text(f"启动发生问题:\n{error_output}")
+                    dialog.actions = [ft.TextButton("关闭", on_click=close_dialog)]
+                    dialog.update()
+
         except Exception as ex:
             self.logger.error(f"Failed to launch game: {ex}")
             import traceback
 
             self.logger.error(traceback.format_exc())
-            self._show_message(f"启动失败: {ex}")
+            if dialog.open:
+                dialog.title = ft.Text("启动错误")
+                dialog.content = ft.Text(f"发生异常:\n{ex}")
+                dialog.actions = [ft.TextButton("关闭", on_click=close_dialog)]
+                dialog.update()
 
     def _create_navigate_handler(self, route: str):
         """创建导航事件处理器 - 正确处理异步调用"""

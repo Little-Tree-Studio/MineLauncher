@@ -7,6 +7,7 @@ from .batch import (
     FileScheduler,
     FileTask,
     FileTaskStatus,
+    MCBatchDownloader,
     SharedConnectionBatchDownloader,
     batch_download,
     batch_download_sync,
@@ -24,7 +25,13 @@ from .config import (
     SpeedLimitMode,
 )
 from .detector import ServerCapabilities, ServerDetector
-from .downloader import ChunkEvent, Downloader, ProgressEvent, download_file, download_file_sync
+from .downloader import (
+    ChunkEvent,
+    Downloader,
+    ProgressEvent,
+    download_file,
+    download_file_sync,
+)
 from .exceptions import (
     CancelledError,
     ChunkDownloadError,
@@ -61,7 +68,14 @@ from .proxy import ProxyDetector, ProxyInfo, ProxyManager
 from .reuse import FileReuseChecker, MultiSourceManager, SharedFileRegistry
 from .resume import DownloadMetadata, ResumeManager
 from .scheduler import AdaptiveChunkSizer, ConnectionOptimizer, SmartScheduler
-from .strategy import DownloadStyle, DynamicStyleAllocator, FileProfile, NetworkProfile, StrategySelector, StyleDecision
+from .strategy import (
+    DownloadStyle,
+    DynamicStyleAllocator,
+    FileProfile,
+    NetworkProfile,
+    StrategySelector,
+    StyleDecision,
+)
 from .utils import SpeedCalculator
 from .worker import DownloadWorker, WorkerPool
 from .writer import BufferedFileWriter, DirectFileWriter
@@ -72,6 +86,7 @@ __all__ = [
     "download_file_sync",
     "BatchDownloader",
     "EnhancedBatchDownloader",
+    "MCBatchDownloader",
     "BatchProgress",
     "FileScheduler",
     "FileTask",

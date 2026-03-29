@@ -4,13 +4,20 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import hashlib
 import time
+from enum import IntEnum
 
 
-LoginType = int
-LOGIN_LEGACY = 0
-LOGIN_NIDE = 2
-LOGIN_AUTHLIB = 3
-LOGIN_MICROSOFT = 5
+class LoginType(IntEnum):
+    LEGACY = 0
+    NIDE = 2
+    AUTHLIB = 3
+    MICROSOFT = 5
+
+
+LOGIN_LEGACY = LoginType.LEGACY
+LOGIN_NIDE = LoginType.NIDE
+LOGIN_AUTHLIB = LoginType.AUTHLIB
+LOGIN_MICROSOFT = LoginType.MICROSOFT
 
 
 class LoginResult:
@@ -35,7 +42,7 @@ class LoginResult:
             "uuid": self.uuid,
             "username": self.username,
             "accessToken": self.access_token,
-            "type": self.type,
+            "type": int(self.type),
             "clientToken": self.client_token,
             "profileJson": self.profile_json,
         }
@@ -46,7 +53,7 @@ class LoginResult:
             uuid=data["uuid"],
             username=data["username"],
             access_token=data["accessToken"],
-            login_type=data["type"],
+            login_type=LoginType(data["type"]),
             client_token=data.get("clientToken"),
             profile_json=data.get("profileJson"),
         )
@@ -83,10 +90,28 @@ class Account:
         self.server_id = server_id
         self.client_token = client_token
 
+    @staticmethod
+    def generate_legacy_uuid(username: str) -> str:
+        name_bytes = username.encode("utf-8")
+        name_hash = 0
+        for byte in name_bytes:
+            name_hash = ((name_hash << 8) - name_hash) & 0xFFFFFFFFFFFFFFFF
+            name_hash ^= byte
+            name_hash &= 0xFFFFFFFFFFFFFFFF
+
+        hash_str = format(name_hash & 0xFFFFFFFFFFFFFFFF, "016x")
+        full_uuid = f"{len(username):02x}{hash_str}"
+
+        uuid_chars = list(full_uuid)
+        uuid_chars[12] = "3"
+        uuid_chars[16] = "9"
+
+        return "".join(uuid_chars)[:32]
+
     def to_dict(self) -> dict:
         return {
             "account_id": self.account_id,
-            "type": self.type,
+            "type": int(self.type),
             "username": self.username,
             "uuid": self.uuid,
             "accessToken": self.access_token,
@@ -104,7 +129,7 @@ class Account:
     def from_dict(cls, data: dict) -> "Account":
         return cls(
             account_id=data["account_id"],
-            login_type=data["type"],
+            login_type=LoginType(data["type"]),
             username=data["username"],
             uuid=data["uuid"],
             access_token=data.get("accessToken", ""),
@@ -284,7 +309,7 @@ class AccountService:
         password: str,
         base_url: str,
         server_id: str = "",
-        login_type: int = LOGIN_NIDE,
+        login_type: LoginType = LOGIN_NIDE,
     ) -> Account:
         account = Account(
             account_id=self._generate_account_id(),

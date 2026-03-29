@@ -273,6 +273,7 @@ class LoginPage:
         try:
             result = self.auth_service.legacy_login(username, skin_type)
             self._show_message(f"登录成功: {result.username}", is_error=False)
+            self._accounts = self.account_service.get_accounts()
             self._invoke_login_success(result)
         except Exception as ex:
             self.logger.error(f"Legacy login failed: {ex}")
