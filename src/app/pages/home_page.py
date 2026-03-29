@@ -11,6 +11,10 @@ from app.services.config_service import ConfigService
 from app.services.i18n_service import I18nService
 from app.services.utils_service import UtilsService
 from app.services.logger_service import LoggerService
+from app.services.version_detector import VersionDetector, McInstanceState, Version
+from app.services.launch_service import LaunchService
+from app.services.auth_service import AuthService
+from app.services.account_service import AccountService, LoginResult, LOGIN_LEGACY
 
 ASSET_DIR = Path(__file__).parent.parent.parent / "assets"
 
@@ -21,6 +25,8 @@ class HomePage:
         self.lang = I18nService(self.cfg.load()["Language"])
         self.page = page
         self.logger = LoggerService().logger
+        self.auth_service = AuthService()
+        self.account_service = AccountService()
         self._versions_root: Path | None = None
         self._versions_list_view: ft.ListView | None = None
         self._versions_root_text: ft.Text | None = None
@@ -29,10 +35,128 @@ class HomePage:
         self._versions_refresh_btn: ft.OutlinedButton | None = None
         self._version_dir_entries: list[dict[str, str]] = []
         self._selected_versions_root: str | None = None
+        self._selected_launch_version: dict | None = None
+        self._home_content: ft.Column | None = None
+        self._launch_version_text: ft.Text | None = None
+        self._launch_btn: ft.FilledButton | None = None
+        self._current_login_result: LoginResult | None = None
+        self._username_text: ft.Text | None = None
+        self._auto_login()
 
     async def _navigate_to(self, route: str):
         """异步导航到指定路由"""
         await self.page.push_route(route)
+
+    def _auto_login(self):
+        """尝试自动登录上一个账户"""
+        try:
+            last_account = self.account_service.get_last_account()
+            if last_account:
+                self._current_login_result = self.auth_service.login_with_account(
+                    last_account
+                )
+                self.logger.info(
+                    f"Auto logged in as: {self._current_login_result.username}"
+                )
+        except Exception as ex:
+            self.logger.warning(f"Auto login failed: {ex}")
+            self._current_login_result = None
+
+    def _open_login_page(self):
+        """打开登录页面"""
+
+        async def on_login_success(login_result: LoginResult):
+            self._current_login_result = login_result
+            await self.page.push_route("/")
+            self._refresh_home_content()
+
+        async def do_nav():
+            from app.pages.login_page import LoginPage
+
+            login_page = LoginPage(self.page, on_login_success)
+            self.page.views.append(login_page.build())
+            self.page.update()
+
+        self.page.run_task(do_nav)
+
+    def _refresh_home_content(self):
+        """刷新首页内容"""
+        if self._home_content is not None:
+            self._home_content.controls.clear()
+            self._home_content.controls.append(self._build_home_content())
+            self._home_content.update()
+
+    def _do_launch_game(self):
+        """启动游戏"""
+        if not self._selected_launch_version:
+            self._show_message("请先选择启动版本")
+            return
+
+        if not self._current_login_result:
+            self._show_message("请先登录账户")
+            self._open_login_page()
+            return
+
+        version_folder = self._selected_launch_version["folder"]
+        version_root = (
+            self._selected_launch_version.get("root") or self._selected_versions_root
+        )
+
+        if not version_root:
+            self._show_message("未设置版本目录")
+            return
+
+        java_path = (
+            r"D:\Program Files\Eclipse Adoptium\jdk-25.0.2.10-hotspot\bin\java.exe"
+        )
+
+        username = self._current_login_result.username
+        access_token = self._current_login_result.access_token
+
+        try:
+            launch_service = LaunchService()
+            config = launch_service.build_launch_config(
+                version_folder=version_folder,
+                versions_root=Path(version_root),
+                java_path=java_path,
+                username=username,
+                access_token=access_token,
+                width=854,
+                height=480,
+            )
+
+            if not config:
+                self._show_message("构建启动配置失败")
+                return
+
+            self.logger.info(f"=== Launch Config ===")
+            self.logger.info(f"Java: {config.java_path}")
+            self.logger.info(f"Main Class: {config.main_class}")
+            self.logger.info(f"Game Dir: {config.game_directory}")
+            self.logger.info(f"Natives: {config.native_path}")
+            self.logger.info(f"Classpath entries: {len(config.classpath)}")
+            for i, cp in enumerate(config.classpath[:5]):
+                self.logger.info(f"  CP[{i}]: {cp}")
+            if len(config.classpath) > 5:
+                self.logger.info(f"  ... and {len(config.classpath) - 5} more")
+            self.logger.info(
+                f"JVM args ({len(config.jvm_arguments)}): {' '.join(config.jvm_arguments[:10])}"
+            )
+            self.logger.info(
+                f"Game args ({len(config.game_arguments)}): {' '.join(config.game_arguments[:15])}"
+            )
+
+            proc = launch_service.launch(config)
+            if proc:
+                self._show_message(f"正在启动: {version_folder}")
+            else:
+                self._show_message("启动失败")
+        except Exception as ex:
+            self.logger.error(f"Failed to launch game: {ex}")
+            import traceback
+
+            self.logger.error(traceback.format_exc())
+            self._show_message(f"启动失败: {ex}")
 
     def _create_navigate_handler(self, route: str):
         """创建导航事件处理器 - 正确处理异步调用"""
@@ -126,11 +250,9 @@ class HomePage:
             )
             for item in self._version_dir_entries
         ]
-        if (
-            self._selected_versions_root
-            and self._selected_versions_root
-            not in [item["path"] for item in self._version_dir_entries]
-        ):
+        if self._selected_versions_root and self._selected_versions_root not in [
+            item["path"] for item in self._version_dir_entries
+        ]:
             self._selected_versions_root = None
         if self._selected_versions_root is None and self._version_dir_entries:
             self._selected_versions_root = self._version_dir_entries[0]["path"]
@@ -274,10 +396,54 @@ class HomePage:
         )
         self.page.update()
 
+    def _get_version_loader_info(self, info) -> str:
+        if info.state == McInstanceState.Forge and info.forge_version:
+            return f"Forge {info.forge_version}"
+        if info.state == McInstanceState.NeoForge and info.neoforge_version:
+            return f"NeoForge {info.neoforge_version}"
+        if info.state == McInstanceState.Fabric and info.fabric_version:
+            return f"Fabric {info.fabric_version}"
+        if info.state == McInstanceState.OptiFine:
+            parts = []
+            if info.optifine_version and info.optifine_version != "未知版本":
+                parts.append(f"OptiFine {info.optifine_version}")
+            if info.has_fabric and info.fabric_version:
+                parts.append(f"Fabric {info.fabric_version}")
+            return " + ".join(parts) if parts else ""
+        if info.state == McInstanceState.LiteLoader:
+            return "LiteLoader"
+        return ""
+
     def _build_version_card(
-        self, folder: str, version: str, tags: list[str]
+        self,
+        folder: str,
+        version: str,
+        tags: list[str],
+        loader_info: str = "",
+        release_time: str | None = None,
     ) -> ft.Control:
-        subtitle = f"{folder} - {version}" + (f" ({','.join(tags)})" if tags else "")
+        if loader_info:
+            subtitle = f"{folder} - {version} ({loader_info})"
+        else:
+            subtitle = f"{folder} - {version}"
+
+        tooltip = f"文件夹: {folder}"
+        if release_time:
+            tooltip += f"\n发布时间: {release_time}"
+
+        def on_select_version(_):
+            self._selected_launch_version = {
+                "folder": folder,
+                "version": version,
+                "tags": tags,
+                "root": str(self._versions_root)
+                if self._versions_root
+                else self._selected_versions_root,
+            }
+            self.cfg.save_selected_launch_version(self._selected_launch_version)
+            self._show_message(f"已选择启动版本: {folder}")
+            self._refresh_home_content()
+
         return ft.Card(
             content=ft.Container(
                 ft.Row(
@@ -285,6 +451,11 @@ class HomePage:
                         ft.Text(subtitle, expand=True),
                         ft.Row(
                             [
+                                ft.IconButton(
+                                    icon=ft.Icons.PLAY_CIRCLE,
+                                    tooltip="选择为启动版本",
+                                    on_click=on_select_version,
+                                ),
                                 ft.IconButton(
                                     icon=ft.Icons.FOLDER_OPEN,
                                     tooltip="打开目录",
@@ -311,6 +482,7 @@ class HomePage:
                     vertical_alignment=ft.CrossAxisAlignment.CENTER,
                 ),
                 padding=10,
+                tooltip=tooltip if tooltip else None,
             ),
             elevation=2,
         )
@@ -325,31 +497,42 @@ class HomePage:
             return root, [], f"版本目录不存在: {root}"
 
         try:
-            folders = UtilsService.list_dirs(root)
-            self.logger.info(f"Found version folders: {folders}")
-        except Exception as e:
-            print(f"Failed to list directories: {e}")
-            self.logger.error(f"Failed to list directories: {e}")
-            folders = []
+            detector = VersionDetector(root)
+            all_versions = detector.detect_all()
+            self.logger.info(f"Found {len(all_versions)} versions")
 
-        for folder in folders:
-            ver = "未知版本"
-            tags = []
-            try:
-                file_path = root / folder / f"{folder}.json"
-                if file_path.exists():
-                    data = orjson.loads(file_path.read_bytes())
-                    ver = data.get("clientVersion", folder)
-                    raw = str(data).lower()
-                    if "fabric" in raw:
-                        tags.append("Fabric")
-                    if "neoforge" in raw:
-                        tags.append("NeoForge")
-                else:
-                    self.logger.warning(f"Version json not found: {file_path}")
-            except Exception as e:
-                self.logger.error(f"Error reading version {folder}: {e}")
-            versions.append({"folder": folder, "version": ver, "tags": tags})
+            for folder, info in sorted(
+                all_versions.items(),
+                key=lambda x: x[1].vanilla_version or Version(0, 0, 0),
+                reverse=True,
+            ):
+                loader_info = self._get_version_loader_info(info)
+                tags = []
+                if info.has_forge:
+                    tags.append("Forge")
+                if info.has_neoforge:
+                    tags.append("NeoForge")
+                if info.has_fabric:
+                    tags.append("Fabric")
+                if info.has_optifine:
+                    tags.append("OptiFine")
+                if info.has_liteloader:
+                    tags.append("LiteLoader")
+
+                versions.append(
+                    {
+                        "folder": folder,
+                        "version": info.vanilla_name,
+                        "tags": tags,
+                        "loader_info": loader_info,
+                        "release_time": info.release_time,
+                    }
+                )
+        except Exception as e:
+            self.logger.error(f"Error loading versions: {e}")
+            import traceback
+
+            print(traceback.format_exc())
 
         print(f"Prepared {len(versions)} versions")
         self.logger.info(f"Prepared {len(versions)} versions")
@@ -385,6 +568,8 @@ class HomePage:
                             item["folder"],
                             item["version"],
                             item["tags"],
+                            item.get("loader_info", ""),
+                            item.get("release_time"),
                         )
                     )
             else:
@@ -596,6 +781,39 @@ class HomePage:
 
     # ---------- 原来的首页内容 ----------
     def _build_home_content(self) -> ft.Column:
+        saved_version = self.cfg.get_selected_launch_version()
+        if saved_version:
+            self._selected_launch_version = saved_version
+
+        version_name = (
+            self._selected_launch_version["folder"]
+            if self._selected_launch_version
+            else "未选择"
+        )
+        version_display = (
+            self._selected_launch_version["version"]
+            if self._selected_launch_version
+            else "请在版本列表中选择"
+        )
+
+        def on_launch_click(_):
+            self._do_launch_game()
+
+        self._launch_version_text = ft.Text(f"{version_name} - {version_display}")
+        self._launch_btn = ft.FilledButton(
+            self.lang.current.get("home", {}).get("game", {}).get("launch", "启动"),
+            icon=ft.Icons.PLAY_ARROW,
+            on_click=on_launch_click,
+            style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=5)),
+        )
+
+        username = (
+            self._current_login_result.username
+            if self._current_login_result
+            else "未登录"
+        )
+        self._username_text = ft.Text(username)
+
         return ft.Column(
             [
                 ft.Column(
@@ -612,7 +830,7 @@ class HomePage:
                                                     fallback_height=20,
                                                     fallback_width=20,
                                                 ),
-                                                ft.Text("zs_xiaoshu"),
+                                                self._username_text,
                                             ]
                                         ),
                                         ft.Button(
@@ -622,6 +840,7 @@ class HomePage:
                                                     "account_settings", "账户设置"
                                                 )
                                             ),
+                                            on_click=lambda _: self._open_login_page(),
                                         ),
                                     ],
                                     horizontal_alignment=ft.CrossAxisAlignment.END,
@@ -677,7 +896,7 @@ class HomePage:
                                                             width=30,
                                                             height=30,
                                                         ),
-                                                        ft.Text("MineCraft 1.20.1"),
+                                                        self._launch_version_text,
                                                     ]
                                                 ),
                                                 ft.Row(
@@ -695,19 +914,7 @@ class HomePage:
                                                                 )
                                                             ),
                                                         ),
-                                                        ft.FilledButton(
-                                                            self.lang.current.get(
-                                                                "home", {}
-                                                            )
-                                                            .get("game", {})
-                                                            .get("launch", "启动"),
-                                                            icon=ft.Icons.PLAY_ARROW,
-                                                            style=ft.ButtonStyle(
-                                                                shape=ft.RoundedRectangleBorder(
-                                                                    radius=5
-                                                                )
-                                                            ),
-                                                        ),
+                                                        self._launch_btn,
                                                     ],
                                                     alignment=ft.MainAxisAlignment.END,
                                                 ),

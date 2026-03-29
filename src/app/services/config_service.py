@@ -10,18 +10,19 @@ class ConfigService:
         "Theme": "system",
         # 下载设置
         "Download": {
-            "max_connections": 16,
-            "min_connections": 4,
+            "max_connections": 8,
+            "min_connections": 2,
             "chunk_size_mb": 2,
             "enable_chunking": True,
             "speed_limit_kbps": 0,  # 0=无限制
             "timeout_seconds": 30,
-            "max_retries": 5,
-            "retry_delay_seconds": 1.0,
-            "verify_hash": True,
+            "max_retries": 3,
+            "retry_delay_seconds": 2.0,
+            "verify_hash": False,
             "adaptive_threads": True,
             "resume_enabled": True,
-            "download_source": "mirror_first",  # mirror_only, mirror_first, official_first, official_only
+            "download_source": "auto",  # bmclapi_first, auto, official_first
+            "version_source": "bmclapi_first",  # bmclapi_first, mojang_first, mojang_only
             "smart_segment": {
                 "min_chunk_size_kb": 512,
                 "max_chunk_size_mb": 10,
@@ -32,6 +33,8 @@ class ConfigService:
         "DownloadHistory": [],
         # 版本目录
         "VersionDirectoryEntries": [],
+        # 当前选择的启动版本
+        "SelectedLaunchVersion": None,
     }
 
     def __init__(self) -> None:
@@ -97,4 +100,15 @@ class ConfigService:
         """清空下载历史"""
         cfg = self.load()
         cfg["DownloadHistory"] = []
+        self.save(cfg)
+
+    def get_selected_launch_version(self) -> dict | None:
+        """获取当前选择的启动版本"""
+        cfg = self.load()
+        return cfg.get("SelectedLaunchVersion")
+
+    def save_selected_launch_version(self, version_info: dict) -> None:
+        """保存当前选择的启动版本"""
+        cfg = self.load()
+        cfg["SelectedLaunchVersion"] = version_info
         self.save(cfg)

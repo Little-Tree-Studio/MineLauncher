@@ -14,6 +14,7 @@ from app.pages.mod_detail_page import mod_detail_page
 from app.pages.settings_page import SettingsPage
 from app.pages.version_directory_page import VersionDirectoryPage
 from app.pages.download_settings_page import DownloadSettingsPage
+from app.pages.versions_page import VersionsPage
 
 ASSET_DIR = Path(__file__).parent.parent / "assets"
 
@@ -87,6 +88,10 @@ class App:
                     page.views.append(mod_detail_page(page))
                 elif page.route == "/settings":
                     page.views.append(SettingsPage(page).build())
+                elif page.route == "/java_settings":
+                    from app.pages.java_settings_page import JavaSettingsPage
+
+                    page.views.append(JavaSettingsPage(page).build())
                 elif page.route == "/download_manager":
                     from app.pages.download_manager_page import download_manager_page
 
@@ -95,6 +100,8 @@ class App:
                     page.views.append(DownloadSettingsPage(page).build())
                 elif page.route == "/version_dirs":
                     page.views.append(VersionDirectoryPage(page).build())
+                elif page.route == "/versions":
+                    page.views.append(VersionsPage(page).build())
                 else:  # 默认主页
                     page.views.clear()
                     home_view = HomePage(page).build()

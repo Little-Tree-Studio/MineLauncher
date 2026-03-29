@@ -2,6 +2,7 @@ from __future__ import annotations
 import flet as ft
 from ..services.i18n_service import I18nService
 from ..services.config_service import ConfigService
+from ..services.java_detector import JavaDetector, JavaInfo
 
 
 class SettingsPage:
@@ -29,6 +30,9 @@ class SettingsPage:
             ],
             actions_alignment=ft.MainAxisAlignment.END,
         )
+        self.java_detector: JavaDetector | None = None
+        self.java_paths: list[JavaInfo] = []
+        self._java_scan_in_progress = False
 
     def _navigate(self, route: str):
         async def do_navigate():
@@ -54,30 +58,34 @@ class SettingsPage:
         )
         self.page.update()
 
-    def _get_java_paths(self):
-        import os
+    async def _scan_java_async(self, mc_path: str | None = None):
+        if self._java_scan_in_progress:
+            return self.java_paths
 
-        java_paths = set()
-        possible_dirs = [
-            os.environ.get("JAVA_HOME", ""),
-            os.path.join(os.environ.get("ProgramFiles", ""), "Java"),
-            os.path.join(os.environ.get("ProgramFiles(x86)", ""), "Java"),
-            os.path.join(os.environ.get("ProgramW6432", ""), "Java"),
-            os.path.join(
-                os.environ.get("LocalAppData", ""), "Programs", "AdoptOpenJDK"
-            ),
-        ]
-        for base in possible_dirs:
-            if base and os.path.exists(base):
-                for root, dirs, files in os.walk(base):
-                    for file in files:
-                        if file.lower() == "java.exe":
-                            java_paths.add(os.path.join(root, file))
-        for p in os.environ.get("PATH", "").split(os.pathsep):
-            exe = os.path.join(p, "java.exe")
-            if os.path.exists(exe):
-                java_paths.add(exe)
-        return sorted(java_paths)
+        self._java_scan_in_progress = True
+        self.java_detector = JavaDetector(mc_path)
+        self.java_paths = await self.java_detector.scan_async()
+        self._java_scan_in_progress = False
+        return self.java_paths
+
+    def _get_java_paths(self) -> list[JavaInfo]:
+        return self.java_paths
+
+    def _get_java_display_text(self, java_info: JavaInfo) -> str:
+        parts = [java_info.path]
+        if java_info.version:
+            parts.append(f" ({java_info.version})")
+        if java_info.is_64bit:
+            parts.append(" [64-bit]")
+        else:
+            parts.append(" [32-bit]")
+        if java_info.is_jdk:
+            parts.append(" JDK")
+        else:
+            parts.append(" JRE")
+        if java_info.is_mc_related:
+            parts.append(" ⚙")
+        return "".join(parts)
 
     def _change_java(self, e):
         selected = e.control.value
@@ -85,16 +93,43 @@ class SettingsPage:
         self.page.show_dialog(ft.SnackBar(ft.Text(f"已选择Java: {selected}")))
         self.page.update()
 
+    async def _scan_and_update_java(self):
+        java_paths = await self._scan_java_async()
+        self._update_java_dropdown(java_paths)
+
+    def _update_java_dropdown(self, java_paths: list[JavaInfo]):
+        if not hasattr(self, "java_dd"):
+            return
+        self.java_dd.options = (
+            [
+                ft.dropdown.Option(j.path, self._get_java_display_text(j))
+                for j in java_paths
+            ]
+            if java_paths
+            else [ft.dropdown.Option("", "未找到Java，请检查环境变量或手动设置。")]
+        )
+        self.java_dd.value = self.cfg.load().get(
+            "JavaPath", java_paths[0].path if java_paths else ""
+        )
+        self.page.update()
+
     def build(self) -> ft.View:
         java_paths = self._get_java_paths()
-        java_dd = ft.Dropdown(
-            options=[ft.dropdown.Option(j, j) for j in java_paths]
+        self.java_dd = ft.Dropdown(
+            options=[
+                ft.dropdown.Option(j.path, self._get_java_display_text(j))
+                for j in java_paths
+            ]
             if java_paths
             else [ft.dropdown.Option("", "未找到Java，请检查环境变量或手动设置。")],
-            value=self.cfg.load().get("JavaPath", java_paths[0] if java_paths else ""),
+            value=self.cfg.load().get(
+                "JavaPath", java_paths[0].path if java_paths else ""
+            ),
             width=500,
             on_select=self._change_java,
         )
+
+        self.page.run_task(self._scan_and_update_java)
 
         # 当前标签页索引
         current_tab = [0]
@@ -165,7 +200,18 @@ class SettingsPage:
                                     ft.Text("Java路径"),
                                 ]
                             ),
-                            java_dd,
+                            ft.Row(
+                                [
+                                    self.java_dd,
+                                    ft.IconButton(
+                                        ft.Icons.SETTINGS,
+                                        on_click=lambda _: self._navigate(
+                                            "/java_settings"
+                                        ),
+                                        tooltip="Java设置",
+                                    ),
+                                ],
+                            ),
                         ],
                         alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                     ),
@@ -176,28 +222,30 @@ class SettingsPage:
         )
 
         # 数据和缓存内容
-        data_content = ft.Column(
-            [
-                ft.Text(
-                    "游戏路径管理",
-                    size=20,
-                    weight=ft.FontWeight.BOLD,
-                ),
-                ft.Row(
-                    controls=[
-                        ft.FilledButton("添加游戏目录", icon=ft.Icons.ADD),
-                        ft.Row(
-                            controls=[
-                                self.path_open_btn,
-                                self.path_delete_btn,
-                            ],
-                        ),
-                    ],
-                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                ),
-            ],
+        data_content = ft.Container(
             padding=10,
-            expand=True,
+            content=ft.Column(
+                [
+                    ft.Text(
+                        "游戏路径管理",
+                        size=20,
+                        weight=ft.FontWeight.BOLD,
+                    ),
+                    ft.Row(
+                        controls=[
+                            ft.FilledButton("添加游戏目录", icon=ft.Icons.ADD),
+                            ft.Row(
+                                controls=[
+                                    self.path_open_btn,
+                                    self.path_delete_btn,
+                                ],
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                    ),
+                ],
+                expand=True,
+            ),
         )
 
         # 下载设置内容
@@ -265,25 +313,10 @@ class SettingsPage:
             current_tab[0] = index
             if index == 0:
                 content_area.content = display_content
-                tab_buttons.controls[0].style = ft.ButtonStyle(
-                    bgcolor=ft.Colors.BLUE_100
-                )
-                tab_buttons.controls[1].style = ft.ButtonStyle(bgcolor=None)
-                tab_buttons.controls[2].style = ft.ButtonStyle(bgcolor=None)
             elif index == 1:
                 content_area.content = data_content
-                tab_buttons.controls[0].style = ft.ButtonStyle(bgcolor=None)
-                tab_buttons.controls[1].style = ft.ButtonStyle(
-                    bgcolor=ft.Colors.BLUE_100
-                )
-                tab_buttons.controls[2].style = ft.ButtonStyle(bgcolor=None)
             else:
                 content_area.content = download_content
-                tab_buttons.controls[0].style = ft.ButtonStyle(bgcolor=None)
-                tab_buttons.controls[1].style = ft.ButtonStyle(bgcolor=None)
-                tab_buttons.controls[2].style = ft.ButtonStyle(
-                    bgcolor=ft.Colors.BLUE_100
-                )
             self.page.update()
 
         # 使用按钮模拟Tabs

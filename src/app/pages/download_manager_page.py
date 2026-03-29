@@ -166,6 +166,8 @@ def download_manager_page(page: ft.Page):
             )
 
         # 详细信息
+        is_mc_download = bool(task.version_id)
+
         details = ft.Column(
             [
                 ft.Row(
@@ -182,8 +184,12 @@ def download_manager_page(page: ft.Page):
                         ft.Text(
                             f"{format_size(task.downloaded)} / {format_size(task.total)}",
                             size=12,
-                        ),
-                        ft.Text("|", size=12, color=ft.Colors.GREY),
+                        )
+                        if not is_mc_download
+                        else ft.Container(),
+                        ft.Text("|", size=12, color=ft.Colors.GREY)
+                        if not is_mc_download
+                        else ft.Container(),
                         ft.Text(f"速度: {format_speed(task.speed)}", size=12),
                         ft.Text("|", size=12, color=ft.Colors.GREY),
                         ft.Text(f"剩余: {format_eta(task.eta)}", size=12),
@@ -214,7 +220,7 @@ def download_manager_page(page: ft.Page):
                 content=details,
                 padding=10,
             ),
-            margin=ft.margin.only(bottom=5),
+            margin=ft.margin.Margin.only(bottom=5),
         )
 
     def build_history_card(history: DownloadHistory) -> ft.Card:
@@ -226,6 +232,15 @@ def download_manager_page(page: ft.Page):
             if history.status == "失败"
             else ft.Colors.GREY
         )
+
+        error_control = None
+        if history.status == "失败" and history.error:
+            error_control = ft.Text(
+                f"失败原因: {history.error}",
+                size=12,
+                color=ft.Colors.RED_700,
+                selectable=True,
+            )
 
         return ft.Card(
             content=ft.Container(
@@ -272,12 +287,13 @@ def download_manager_page(page: ft.Page):
                                 ),
                             ]
                         ),
+                        error_control if error_control else ft.Container(),
                     ],
                     spacing=5,
                 ),
                 padding=10,
             ),
-            margin=ft.margin.only(bottom=5),
+            margin=ft.margin.Margin.only(bottom=5),
         )
 
     def build_statistics() -> ft.Card:
@@ -348,7 +364,7 @@ def download_manager_page(page: ft.Page):
                 ),
                 padding=15,
             ),
-            margin=ft.margin.only(bottom=10),
+            margin=ft.margin.Margin.only(bottom=10),
         )
 
     def refresh():

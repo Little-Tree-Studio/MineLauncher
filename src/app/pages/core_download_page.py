@@ -14,6 +14,7 @@ from ..services.download_service_v2 import (
 )
 from ..services.download_manager import DownloadManager, DownloadTask, TaskStatus
 from ..services.config_service import ConfigService
+from ..services.logger_service import LoggerService
 
 
 class CoreDownloadPage:
@@ -22,6 +23,7 @@ class CoreDownloadPage:
     def __init__(self, page: ft.Page, mc_root: str | None = None):
         self.page = page
         self.cfg = ConfigService()
+        self.logger = LoggerService().logger
 
         # 获取版本目录列表
         self._version_dirs = self._load_version_dirs()
@@ -80,6 +82,12 @@ class CoreDownloadPage:
             navigate(top_view.route if top_view else "/resources")
         else:
             navigate("/resources")
+
+    async def _navigate_to(self, route: str):
+        await self.page.push_route(route)
+
+    def _on_download_manager_click(self):
+        self.page.run_task(self._navigate_to, "/download_manager")
 
     # -------------------- 数据加载 --------------------
     def _load_versions(self):
@@ -351,29 +359,31 @@ class CoreDownloadPage:
 
         # 进度回调
         def progress_callback(progress: DownloadProgress):
-            # v2 下载服务回调的是“当前文件进度 + 总文件统计”，
-            # 任务条采用文件维度进度更稳定，不会被状态回调重置为 0。
-            total_files = (
-                progress.total_files if progress.total_files > 0 else task.file_count
-            )
-            finished_files = (
-                progress.finished_files
-                if progress.total_files > 0
-                else task.completed_files
-            )
             current_file = progress.current_file or progress.status or task.current_file
 
-            task.update(
-                downloaded=finished_files,
-                total=total_files,
-                speed=progress.speed,
-                status=TaskStatus.DOWNLOADING,
-                current_file=current_file,
-                connections=progress.connections,
-                completed_files=finished_files,
-                file_count=total_files,
-            )
-            self._download_manager._notify()
+            if progress.status and "失败" in progress.status:
+                task.update(error=progress.status)
+
+            update_data = {
+                "speed": progress.speed,
+                "status": TaskStatus.DOWNLOADING,
+                "current_file": current_file,
+                "connections": progress.connections,
+            }
+
+            if progress.total_files > 0:
+                update_data["file_count"] = progress.total_files
+                update_data["completed_files"] = progress.finished_files
+            if progress.total > 0:
+                update_data["total"] = progress.total
+                update_data["downloaded"] = progress.current
+            elif progress.total_files > 0:
+                update_data["total"] = progress.total_files
+                update_data["downloaded"] = progress.finished_files
+
+            if "total" in update_data:
+                task.update(**update_data)
+                self._download_manager._notify()
 
         # 获取下载配置
         download_cfg = self.cfg.get_download_config()
@@ -436,8 +446,20 @@ class CoreDownloadPage:
                     )
                     self._download_manager.archive_task(task.task_id)
                 else:
+                    detailed_reason = (
+                        task.error
+                        or getattr(downloader, "last_error", "")
+                        or f"版本 {display_name} 下载失败"
+                    )
                     msg = f"版本 {display_name} 下载失败"
-                    task.update(status=TaskStatus.FAILED, error=msg, completed_at=time.time())
+                    task.update(
+                        status=TaskStatus.FAILED,
+                        error=detailed_reason,
+                        completed_at=time.time(),
+                    )
+                    self.logger.error(
+                        f"版本下载失败: version={version_id}, name={display_name}, reason={detailed_reason}"
+                    )
                     self._download_manager.archive_task(task.task_id)
 
                 print(f"[下载线程] 结束: {msg}")
@@ -449,7 +471,14 @@ class CoreDownloadPage:
                 tb = traceback.format_exc()
                 print(f"[下载线程] 异常: {ex}\n{tb}")
                 err_msg = f"下载异常: {ex}"
-                task.update(status=TaskStatus.FAILED, error=str(ex), completed_at=time.time())
+                task.update(
+                    status=TaskStatus.FAILED,
+                    error=err_msg,
+                    completed_at=time.time(),
+                )
+                self.logger.exception(
+                    f"版本下载线程异常: version={version_id}, name={display_name}"
+                )
                 self._download_manager.archive_task(task.task_id)
                 self._download_manager._notify()
 
@@ -483,9 +512,7 @@ class CoreDownloadPage:
                 ft.IconButton(
                     ft.Icons.DOWNLOAD,
                     tooltip="下载管理",
-                    on_click=lambda _: self.page.run_task(
-                        lambda: self.page.push_route("/download_manager")
-                    ),
+                    on_click=lambda _: self._on_download_manager_click(),
                 ),
             ],
             automatically_imply_leading=False,

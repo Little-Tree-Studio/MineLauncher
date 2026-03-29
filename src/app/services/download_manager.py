@@ -192,6 +192,7 @@ class DownloadTask:
             "average_speed": self.get_average_speed(),
             "file_count": self.file_count,
             "completed_files": self.completed_files,
+            "error": self.error,
         }
 
 
@@ -213,6 +214,7 @@ class DownloadHistory:
     completed_files: int
     target_dir: str = ""
     custom_name: str = ""
+    error: str = ""
 
     @classmethod
     def from_task(cls, task: DownloadTask) -> "DownloadHistory":
@@ -231,6 +233,7 @@ class DownloadHistory:
             completed_files=task.completed_files,
             target_dir=task.target_dir,
             custom_name=task.custom_name,
+            error=task.error or "",
         )
 
     def format_size(self, size: int) -> str:

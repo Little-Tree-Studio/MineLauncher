@@ -9,13 +9,23 @@ authors = [
 ]
 dependencies = [
   "flet[all]",
-  "littledl>=0.1.0",
+  "h2>=4.3.0",
+  "littledl>=0.7.0",
   "loguru>=0.7.3",
   "orjson>=3.11.1",
   "pyyaml>=6.0.3",
   "requests>=2.32.4",
   "rtoml>=0.12.0",
 ]
+
+[tool.uv]
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple"
+default = false
+
+[tool.uv.sources]
+littledl = { index = "pypi" }
 
 [tool.flet]
 # org name in reverse domain name notation, e.g. "com.mycompany".
@@ -30,7 +40,7 @@ product = "Minelauncher"
 company = "Flet"
 
 # copyright text to display in about app dialogs
-copyright = "Copyright (C) 2025 by Little Tree Studio"
+copyright = "Copyright (C) 2026 by Little Tree Studio"
 
 [tool.flet.app]
 path = "src"

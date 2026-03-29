@@ -115,7 +115,7 @@ class DownloadSettingsPage:
             ],
             value=self.download_cfg.get("download_source", "mirror_first"),
             width=250,
-            on_change=lambda e: self._save_setting("download_source", e.control.value),
+            on_select=lambda e: self._save_setting("download_source", e.control.value),
         )
 
         # 开关控件
